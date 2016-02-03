@@ -1359,7 +1359,8 @@ static int ssd60xx_work(void)
         if((FingerCount == 0 && Touch_status > Reg_C4)||(FingerCount == 1 && Touch_status > Reg_C5)||
           (FingerCount == 2 && Touch_status > Reg_C6) || (FingerCount == 3 && Touch_status > Reg_C7)||
 		(FingerCount >= 4  && Touch_status > Reg_C8)) {
-                  if (ForceTouch_state == 0/* && ForceTouch_alive == 0*/) {
+                  //if (ForceTouch_state == 0 || (EventStatus&0x0008) != 0) {
+                  if (!(ForceTouch_state != 0 && (EventStatus&0x0008) == 0)) {
                     SSL_DEBUG("ssd60xx 0x78 = %x , FingerCount = %d (%i) \n",Touch_status , FingerCount, ForceTouch_state);
                     ssd60xx_write_reg(ssl_priv->client, 0xA2, 0x00, 0x01, 2);
                     mdelay(300);
