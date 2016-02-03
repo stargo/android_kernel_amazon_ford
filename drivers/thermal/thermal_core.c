@@ -38,6 +38,17 @@
 
 #include "thermal_core.h"
 
+#ifdef CONFIG_AMAZON_METRICS_LOG
+#include <linux/metricslog.h>
+#ifndef THERMO_METRICS_STR_LEN
+#define THERMO_METRICS_STR_LEN 128
+#endif
+#endif
+
+#ifdef CONFIG_AMAZON_SIGN_OF_LIFE
+#include <linux/sign_of_life.h>
+#endif
+
 MODULE_AUTHOR("Zhang Rui");
 MODULE_DESCRIPTION("Generic thermal management sysfs support");
 MODULE_LICENSE("GPL v2");
@@ -334,6 +345,10 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
 				int trip, enum thermal_trip_type trip_type)
 {
 	long trip_temp;
+#ifdef CONFIG_AMAZON_METRICS_LOG
+	char *thermal_metric_prefix = "thermzone:def:monitor=1;CT;1";
+	char buf[THERMO_METRICS_STR_LEN];
+#endif
 
 	tz->ops->get_trip_temp(tz, trip, &trip_temp);
 
@@ -345,9 +360,33 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
 		tz->ops->notify(tz, trip, trip_type);
 
 	if (trip_type == THERMAL_TRIP_CRITICAL) {
+#ifdef CONFIG_AMAZON_SIGN_OF_LIFE
+		if (!strncmp(tz->type, "mtktspmic", sizeof("mtktspmic") - 1))
+			life_cycle_set_thermal_shutdown_reason(THERMAL_SHUTDOWN_REASON_PMIC);
+		else if (!strncmp(tz->type, "mtktsbattery", sizeof("mtktsbattery") - 1))
+			life_cycle_set_thermal_shutdown_reason(THERMAL_SHUTDOWN_REASON_BATTERY);
+		else if (!strncmp(tz->type, "mtktscpu", sizeof("mtktscpu") - 1) ||
+			 !strncmp(tz->type, "mtktsabb", sizeof("mtktsabb") - 1))
+			life_cycle_set_thermal_shutdown_reason(THERMAL_SHUTDOWN_REASON_SOC);
+		else if (!strncmp(tz->type, "mtktswmt", sizeof("mtktswmt") - 1))
+			life_cycle_set_thermal_shutdown_reason(THERMAL_SHUTDOWN_REASON_WIFI );
+		else if (!strncmp(tz->type, "mtkts_bts", sizeof("mtkts_bts") - 1) ||
+			 !strncmp(tz->type, "virtual_sensor", sizeof("virtual_sensor") - 1))
+			life_cycle_set_thermal_shutdown_reason(THERMAL_SHUTDOWN_REASON_PCB);
+		else if (!strncmp(tz->type, "mtktspa", sizeof("mtktspa") - 1))
+			life_cycle_set_thermal_shutdown_reason(THERMAL_SHUTDOWN_REASON_MODEM);
+		else
+			dev_err(&tz->device, "Thermal zone: %s reaching critial", tz->type);
+#endif
+#ifdef CONFIG_AMAZON_METRICS_LOG
+		snprintf(buf, THERMO_METRICS_STR_LEN,
+			"%s,thermal_temp=%d;CT;1,thermal_caught_shutdown=1;CT;1:NR",
+			thermal_metric_prefix, tz->temperature / 1000);
+		log_to_metrics(ANDROID_LOG_INFO, "ThermalEvent", buf);
+#endif
 		dev_emerg(&tz->device,
-			  "critical temperature reached(%d C),shutting down\n",
-			  tz->temperature / 1000);
+			  "%s: critical temperature reached(%d C),shutting down\n",
+			  tz->type, tz->temperature / 1000);
 		orderly_poweroff(true);
 	}
 }
@@ -355,6 +394,10 @@ static void handle_critical_trips(struct thermal_zone_device *tz,
 static void handle_thermal_trip(struct thermal_zone_device *tz, int trip)
 {
 	enum thermal_trip_type type;
+#ifdef CONFIG_AMAZON_METRICS_LOG
+	char *thermal_metric_prefix = "thermzone:def:monitor=1;CT;1";
+	char buf[THERMO_METRICS_STR_LEN];
+#endif
 
 	tz->ops->get_trip_type(tz, trip, &type);
 
@@ -362,6 +405,16 @@ static void handle_thermal_trip(struct thermal_zone_device *tz, int trip)
 		handle_critical_trips(tz, trip, type);
 	else
 		handle_non_critical_trips(tz, trip, type);
+
+#ifdef CONFIG_AMAZON_METRICS_LOG
+	if (type == THERMAL_TRIP_PASSIVE || type == THERMAL_TRIP_HOT) {
+		snprintf(buf, THERMO_METRICS_STR_LEN,
+			"%s,thermal_zone=%d;CT;1,temp=%d;DV;1:NR",
+			thermal_metric_prefix, trip, tz->temperature / 1000);
+		log_to_metrics(ANDROID_LOG_INFO, "ThermalEvent", buf);
+	}
+#endif
+
 	/*
 	 * Alright, we handled this trip successfully.
 	 * So, start monitoring again.
@@ -1749,6 +1802,8 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 	if (!tz)
 		return;
 
+    cancel_delayed_work_sync(&(tz->poll_queue)); // force stop pending/running delayed work
+
 	tzp = tz->tzp;
 
 	mutex_lock(&thermal_list_lock);
@@ -1782,7 +1837,8 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 
 	mutex_unlock(&thermal_list_lock);
 
-	thermal_zone_device_set_polling(tz, 0);
+    //mutex_lock(&tz->lock); // avoid destroy a locked mutex
+	//thermal_zone_device_set_polling(tz, 0);
 
 	if (tz->type[0])
 		device_remove_file(&tz->device, &dev_attr_type);
@@ -1796,6 +1852,7 @@ void thermal_zone_device_unregister(struct thermal_zone_device *tz)
 	thermal_remove_hwmon_sysfs(tz);
 	release_idr(&thermal_tz_idr, &thermal_idr_lock, tz->id);
 	idr_destroy(&tz->idr);
+	//mutex_unlock(&tz->lock); // avoid destroy a locked mutex
 	mutex_destroy(&tz->lock);
 	device_unregister(&tz->device);
 	return;

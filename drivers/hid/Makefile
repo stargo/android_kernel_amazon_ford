@@ -10,6 +10,10 @@ endif
 obj-$(CONFIG_HID)		+= hid.o
 obj-$(CONFIG_UHID)		+= uhid.o
 
+#
+# Makefile for the BTHID driver
+#
+obj-$(CONFIG_HID_LAB126) += hid-magneto.o
 obj-$(CONFIG_HID_GENERIC)	+= hid-generic.o
 
 hid-$(CONFIG_HIDRAW)		+= hidraw.o
@@ -38,6 +42,7 @@ endif
 
 obj-$(CONFIG_HID_A4TECH)	+= hid-a4tech.o
 obj-$(CONFIG_HID_ACRUX)		+= hid-axff.o
+obj-$(CONFIG_HID_AMAZON_ASPEN) += hid-aspen.o
 obj-$(CONFIG_HID_APPLE)		+= hid-apple.o
 obj-$(CONFIG_HID_APPLEIR)	+= hid-appleir.o
 obj-$(CONFIG_HID_AUREAL)        += hid-aureal.o
@@ -60,7 +65,6 @@ obj-$(CONFIG_HID_KYE)		+= hid-kye.o
 obj-$(CONFIG_HID_LCPOWER)       += hid-lcpower.o
 obj-$(CONFIG_HID_LENOVO_TPKBD)	+= hid-lenovo-tpkbd.o
 obj-$(CONFIG_HID_LOGITECH)	+= hid-logitech.o
-obj-$(CONFIG_HID_LOGITECH_DJ)	+= hid-logitech-dj.o
 obj-$(CONFIG_HID_MAGICMOUSE)    += hid-magicmouse.o
 obj-$(CONFIG_HID_MICROSOFT)	+= hid-microsoft.o
 obj-$(CONFIG_HID_MONTEREY)	+= hid-monterey.o

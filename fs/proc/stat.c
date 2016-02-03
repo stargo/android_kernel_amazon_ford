@@ -192,7 +192,6 @@ static int stat_open(struct inode *inode, struct file *file)
 	/* minimum size to display an interrupt count : 2 bytes */
 	size += 2 * nr_irqs;
 
-	/* don't ask for more than the kmalloc() max size */
 	if (size > KMALLOC_MAX_SIZE)
 		size = KMALLOC_MAX_SIZE;
 	buf = kmalloc(size, GFP_KERNEL);

@@ -28,6 +28,18 @@
 #include <linux/poll.h>
 #include <net/sock.h>
 #include <linux/seq_file.h>
+#define ENABLE 1
+#define DISABLE 0
+
+#ifndef SCO_OVER_HCI_TO_AUDIO_HAL_SUPPORT
+#define  SCO_OVER_HCI_TO_AUDIO_HAL_SUPPORT  ENABLE
+/* #define  SCO_OVER_HCI_TO_AUDIO_HAL_SUPPORT  DISABLE */
+#endif
+#ifdef SCO_OVER_HCI_TO_AUDIO_HAL_SUPPORT
+#if SCO_OVER_HCI_TO_AUDIO_HAL_SUPPORT == ENABLE
+#define SCO_OVER_HCI_TO_AUDIO_HAL
+#endif
+#endif
 
 #ifndef AF_BLUETOOTH
 #define AF_BLUETOOTH	31
@@ -115,6 +127,18 @@ int bt_err(const char *fmt, ...);
 #define BT_INFO(fmt, ...)	bt_info(fmt "\n", ##__VA_ARGS__)
 #define BT_ERR(fmt, ...)	bt_err(fmt "\n", ##__VA_ARGS__)
 #define BT_DBG(fmt, ...)	pr_debug(fmt "\n", ##__VA_ARGS__)
+
+
+#ifdef SCO_OVER_HCI_TO_AUDIO_HAL
+
+#define BT_VOICE_TRANSPARENT      0x0003
+#define BT_VOICE_CVSD_16BIT       0x0060
+#define BT_VOICE                  11
+struct bt_voice {
+	 __u16 setting;
+};
+
+#endif
 
 /* Connection and socket states */
 enum {
@@ -335,6 +359,15 @@ extern int  bt_procfs_init(struct net *net, const char *name,
 extern void bt_procfs_cleanup(struct net *net, const char *name);
 
 extern struct dentry *bt_debugfs;
+
+#ifdef SCO_OVER_HCI_TO_AUDIO_HAL
+extern struct hci_conn *global_hci_conn;
+extern __u16 globalHandle;
+#endif
+
+#ifdef SCO_OVER_HCI_TO_AUDIO_HAL
+extern struct hci_dev *globalhdev;
+#endif
 
 int l2cap_init(void);
 void l2cap_exit(void);

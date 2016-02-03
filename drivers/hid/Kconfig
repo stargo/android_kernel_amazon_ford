@@ -111,6 +111,17 @@ config HID_ACRUX_FF
 	Say Y here if you want to enable force feedback support for ACRUX
 	game controllers.
 
+config HID_AMAZON_ASPEN
+	tristate "Amazon Aspen BT Keyboard / Trackpad"
+	depends on HID
+	default HID
+	---help---
+	Support for Amazon Aspen KB/TrackPad
+	This custom driver handle Vendor specific events.
+
+	Say Y here if you want to enable support for Amazon Aspen KB/TrackPad
+
+
 config HID_APPLE
 	tristate "Apple {i,Power,Mac}Books" if EXPERT
 	depends on HID
@@ -323,16 +334,6 @@ config HID_LOGITECH
 	default !EXPERT
 	---help---
 	Support for Logitech devices that are not fully compliant with HID standard.
-
-config HID_LOGITECH_DJ
-	tristate "Logitech Unifying receivers full support"
-	depends on HID_LOGITECH
-	---help---
-	Say Y if you want support for Logitech Unifying receivers and devices.
-	Unifying receivers are capable of pairing up to 6 Logitech compliant
-	devices to the same receiver. Without this driver it will be handled by
-	generic USB_HID driver and all incoming events will be multiplexed
-	into a single mouse and a single keyboard device.
 
 config LOGITECH_FF
 	bool "Logitech force feedback support"
@@ -761,6 +762,16 @@ config HID_SENSOR_HUB
 	  drivers can use the service provided by this driver to register
 	  for events and handle data streams. Each sensor driver can format
 	  data and present to user mode using input or IIO interface.
+
+config HID_LAB126
+	tristate "Lab126 keyboard"
+	depends on HID
+	default y
+	---help---
+	  Support for Lab126 keyboard.
+	  this will add magneto object to the build.
+	  Can be configured as module.
+	  Safe to say no
 
 endmenu
 

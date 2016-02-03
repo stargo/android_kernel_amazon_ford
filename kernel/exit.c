@@ -59,6 +59,10 @@
 #include <asm/pgtable.h>
 #include <asm/mmu_context.h>
 
+#ifdef CONFIG_MT_PRIO_TRACER
+# include <linux/prio_tracer.h>
+#endif
+
 static void exit_mm(struct task_struct * tsk);
 
 static void __unhash_process(struct task_struct *p, bool group_dead)
@@ -74,6 +78,7 @@ static void __unhash_process(struct task_struct *p, bool group_dead)
 		__this_cpu_dec(process_counts);
 	}
 	list_del_rcu(&p->thread_group);
+	list_del_rcu(&p->thread_node);
 }
 
 /*
@@ -454,6 +459,7 @@ static void exit_mm(struct task_struct * tsk)
 {
 	struct mm_struct *mm = tsk->mm;
 	struct core_state *core_state;
+	int mm_released;
 
 	mm_release(tsk, mm);
 	if (!mm)
@@ -499,7 +505,9 @@ static void exit_mm(struct task_struct * tsk)
 	enter_lazy_tlb(mm, current);
 	task_unlock(tsk);
 	mm_update_next_owner(mm);
-	mmput(mm);
+	mm_released = mmput(mm);
+	if (mm_released)
+		set_tsk_thread_flag(tsk, TIF_MM_RELEASED);
 }
 
 /*
@@ -711,12 +719,25 @@ static void check_stack_usage(void)
 static inline void check_stack_usage(void) {}
 #endif
 
+#ifdef CONFIG_SCHEDSTATS
+/* mt shceduler profiling*/
+extern void end_mtproc_info(struct task_struct *p);
+#endif
 void do_exit(long code)
 {
 	struct task_struct *tsk = current;
 	int group_dead;
 
 	profile_task_exit(tsk);
+#ifdef CONFIG_SCHEDSTATS
+	/* mt shceduler profiling*/
+	pr_debug("[%d:%s] exit\n", tsk->pid, tsk->comm);
+	end_mtproc_info(tsk);
+#endif
+
+#ifdef CONFIG_MT_PRIO_TRACER
+	delete_prio_tracer(tsk->pid);
+#endif
 
 	WARN_ON(blk_needs_flush_plug(tsk));
 
@@ -840,7 +861,7 @@ void do_exit(long code)
 	/*
 	 * Make sure we are holding no locks:
 	 */
-	debug_check_no_locks_held(tsk);
+	debug_check_no_locks_held();
 	/*
 	 * We can do this unlocked here. The futex code uses this flag
 	 * just to verify whether the pi state cleanup has been done

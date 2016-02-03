@@ -4,6 +4,7 @@ config SND_TIMER
 
 config SND_PCM
 	tristate
+	depends on TRAPZ
 	select SND_TIMER
 
 config SND_HWDEP

@@ -30,10 +30,16 @@
 
 #include "atags.h"
 
-static char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
+char default_command_line[COMMAND_LINE_SIZE] __initdata = CONFIG_CMDLINE;
 
 #ifndef MEM_SIZE
 #define MEM_SIZE	(16*1024*1024)
+#endif
+
+#ifdef CONFIG_IDME
+#define IDME_ATAG_SIZE  8736 
+unsigned char system_idme[IDME_ATAG_SIZE+1];
+EXPORT_SYMBOL(system_idme);
 #endif
 
 static struct {
@@ -138,6 +144,15 @@ static int __init parse_tag_cmdline(const struct tag *tag)
 }
 
 __tagtable(ATAG_CMDLINE, parse_tag_cmdline);
+
+#ifdef CONFIG_IDME
+static int __init parse_tag_idme(const struct tag *tag)
+{
+	memset(system_idme, 0, IDME_ATAG_SIZE+1);
+	memcpy(system_idme, tag->u.idme.idme, IDME_ATAG_SIZE); /* idme item */
+}
+__tagtable(ATAG_IDME, parse_tag_idme);
+#endif
 
 /*
  * Scan the tag table for this tag, and call its parse function.

@@ -48,6 +48,11 @@
 #include <asm/ptrace.h>
 #include <asm/irq_regs.h>
 
+#if defined(CONFIG_MTK_WD_KICKER) && defined(CONFIG_FIQ_GLUE)
+#include <asm/fiq.h>
+#include <mach/mt_irq.h>
+#endif
+
 /* Whether we react on sysrq keys or just ignore them */
 static int __read_mostly sysrq_enabled = SYSRQ_DEFAULT_ENABLE;
 static bool __read_mostly sysrq_always_enabled;
@@ -143,6 +148,44 @@ static struct sysrq_key_op sysrq_crash_op = {
 	.action_msg	= "Trigger a crash",
 	.enable_mask	= SYSRQ_ENABLE_DUMP,
 };
+
+#if defined(CONFIG_MTK_WD_KICKER) && defined(CONFIG_FIQ_GLUE)
+static DEFINE_SPINLOCK(wdt_lock);
+
+static void sysrq_handle_wdt_sw_rst(int key)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&wdt_lock, flags);
+	while(1);
+	/* wait for wdt fiq to kick in. */
+}
+
+static struct sysrq_key_op sysrq_wdt_sw_op = {
+	.handler	= sysrq_handle_wdt_sw_rst,
+	.help_msg	= "wdt sw rst(x)",
+	.action_msg	= "Trigger a sw wdt reset",
+	.enable_mask	= SYSRQ_ENABLE_DUMP,
+};
+
+static void sysrq_handle_wdt_hw_rst(int key)
+{
+	unsigned long flags;
+
+	spin_lock_irqsave(&wdt_lock, flags);
+	/* disable WDT fiq. */
+	mt_disable_fiq(MT_WDT_IRQ_ID);
+	while(1);
+	/* wait for wdt hw to reboot DUT. */
+}
+
+static struct sysrq_key_op sysrq_wdt_hw_op = {
+	.handler	= sysrq_handle_wdt_hw_rst,
+	.help_msg	= "wdt hw rst(y)",
+	.action_msg	= "Trigger a hw wdt reset",
+	.enable_mask	= SYSRQ_ENABLE_DUMP,
+};
+#endif
 
 static void sysrq_handle_reboot(int key)
 {
@@ -458,11 +501,16 @@ static struct sysrq_key_op *sysrq_key_table[36] = {
 	/* v: May be registered for frame buffer console restore */
 	NULL,				/* v */
 	&sysrq_showstate_blocked_op,	/* w */
+#if defined(CONFIG_MTK_WD_KICKER) && defined(CONFIG_FIQ_GLUE)
+	&sysrq_wdt_sw_op,			/* x */
+	&sysrq_wdt_hw_op,			/* y */
+#else
 	/* x: May be registered on ppc/powerpc for xmon */
 	/* x: May be registered on sparc64 for global PMU dump */
 	NULL,				/* x */
 	/* y: May be registered on sparc64 for global register dump */
 	NULL,				/* y */
+#endif
 	&sysrq_ftrace_dump_op,		/* z */
 };
 

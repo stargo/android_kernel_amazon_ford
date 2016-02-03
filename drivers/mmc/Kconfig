@@ -27,4 +27,8 @@ source "drivers/mmc/card/Kconfig"
 
 source "drivers/mmc/host/Kconfig"
 
+config MTK_STORAGE_PERF_LOGGING
+  bool "MTK storage perf log"
+  default n
+
 endif # MMC

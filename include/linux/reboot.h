@@ -10,6 +10,14 @@
 #define SYS_HALT	0x0002	/* Notify of system halt */
 #define SYS_POWER_OFF	0x0003	/* Notify of system power off */
 
+enum reboot_mode {
+	REBOOT_COLD = 0,
+	REBOOT_WARM,
+	REBOOT_HARD,
+	REBOOT_SOFT,
+	REBOOT_GPIO,
+};
+
 extern int register_reboot_notifier(struct notifier_block *);
 extern int unregister_reboot_notifier(struct notifier_block *);
 
@@ -40,8 +48,10 @@ void ctrl_alt_del(void);
 
 #define POWEROFF_CMD_PATH_LEN	256
 extern char poweroff_cmd[POWEROFF_CMD_PATH_LEN];
+extern char reboot_cmd[POWEROFF_CMD_PATH_LEN];
 
 extern int orderly_poweroff(bool force);
+extern int orderly_reboot(bool force);
 
 /*
  * Emergency restart, callable from an interrupt handler.
