@@ -1991,12 +1991,12 @@ static long disp_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned lo
 
             DISP_MSG("DISP_IOCTL_SET_GAMMALUT\n");
 
-            gamma_index = get_gamma_index();
-            if(copy_from_user(gamma_index, (void *)arg, sizeof(DISPLAY_GAMMA_T)))
-            {
-                printk("disp driver : DISP_IOCTL_SET_GAMMALUT Copy from user failed\n");
-                return -EFAULT;
-            }
+			/*gamma_index = get_gamma_index();
+			if(copy_from_user(gamma_index, (void *)arg, sizeof(DISPLAY_GAMMA_T)))
+			{
+			    printk("disp driver : DISP_IOCTL_SET_GAMMALUT Copy from user failed\n");
+			    return -EFAULT;
+			}     do not need                 */
 
             // disable BLS and suspend AAL
             GetUpdateMutex();

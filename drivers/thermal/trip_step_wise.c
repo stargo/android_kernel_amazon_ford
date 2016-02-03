@@ -86,12 +86,8 @@ static int trip_step_wise_throttle(struct thermal_zone_device *tz, int trip)
 			pr_info("thermal device %s state change, cur %ld target %ld\n",
 				 tz->type, cur_state, target);
 
-			/* Only send uevent for throttle start and stop */
-			if ((cur_state == 0 && target != 0) ||
-			    (cur_state != 0 && target == 0)) {
-				snprintf(data, sizeof(data), "TRIP=%u", trip);
-				kobject_uevent_env(&tz->device.kobj, KOBJ_CHANGE, envp);
-			}
+			snprintf(data, sizeof(data), "THERMAL_STATE=%ld", cur_state);
+			kobject_uevent_env(&tz->device.kobj, KOBJ_CHANGE, envp);
 		}
 	}
 	mutex_unlock(&tz->lock);

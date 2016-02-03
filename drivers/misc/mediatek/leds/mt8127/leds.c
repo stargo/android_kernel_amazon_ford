@@ -1406,12 +1406,16 @@ void mt_mt65xx_led_work(struct work_struct *work)
 	mutex_unlock(&leds_mutex);;
 }
 
+extern unsigned long DISP_GetLCMIndex(void);
 void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 {
 		struct mt65xx_led_data *led_data =
 			container_of(led_cdev, struct mt65xx_led_data, cdev);
 		//unsigned long flags;
 		//spin_lock_irqsave(&leds_lock, flags);
+		static int lcmindex = -1;
+		if(lcmindex==-1)
+			lcmindex = DISP_GetLCMIndex();
 		
 #ifdef CONFIG_MTK_AAL_SUPPORT
 		if(led_data->level != level)
@@ -1424,9 +1428,12 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 			}
 			else
 			{
+				if(lcmindex==1) {/*TXD LCM*/
+					led_data->level = led_data->level*233/255; /*max led level = 233*/	
+				}
 				LEDS_DEBUG("[LED]Set Backlight directly %d at time %lu\n",led_data->level,jiffies);
 				//mt_mt65xx_led_set_cust(&led_data->cust, led_data->level); 
-				disp_aal_notify_backlight_changed( (((1 << MT_LED_INTERNAL_LEVEL_BIT_CNT) - 1)*level + 127)/255 );
+				disp_aal_notify_backlight_changed( (((1 << MT_LED_INTERNAL_LEVEL_BIT_CNT) - 1)*led_data->level + 127)/255 );
 			}
 		}
 #else

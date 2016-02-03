@@ -5,11 +5,11 @@
 #define GSL_ALG_ID		//有没有id算法
 #define GSL_DEBUG			//调试
 #define TPD_PROC_DEBUG		//adb调试
-//#define GSL_TIMER				//定时器宏
+#define GSL_TIMER				//定时器宏
 //#define TPD_PROXIMITY			//距离传感器宏
 
 
-#define GSL9XX_VDDIO_1800		0
+#define GSL9XX_VDDIO_1800		1
 #define TPD_DEBUG_TIME	0x20130424
 struct gsl_touch_info
 {

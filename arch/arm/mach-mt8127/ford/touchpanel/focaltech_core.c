@@ -76,6 +76,8 @@
 #include <mach/mt_typedefs.h>
 #include <mach/mt_boot.h>
 #include "focaltech_core.h"
+#include <mach/battery_common.h>
+
 /*******************************************************************************
 * 2.Private constant and macro definitions using #define
 *******************************************************************************/
@@ -984,6 +986,8 @@ int tpd_ps_operate(void *self, uint32_t command, void *buff_in, int size_in,
 * Output: no
 * Return: 0
 ***********************************************************************/
+static int set_charger_exist = 0;
+extern PMU_ChargerStruct BMT_status;
 static int touch_event_handler(void *unused)
 {
 	struct touch_info cinfo, pinfo;
@@ -1022,6 +1026,25 @@ static int touch_event_handler(void *unused)
 			continue;
 		}
 #endif
+		if (BMT_status.charger_exist == KAL_TRUE) {
+			if (0==set_charger_exist) {
+				ret = fts_write_reg(fts_i2c_client, 0x8B, 1);
+				if (ret < 0) {
+					printk("[Focal][Touch] write value fail");
+					/*return ret;*/
+				}
+				set_charger_exist = 1;
+			}
+		} else {
+			if (1==set_charger_exist) {
+				ret = fts_write_reg(fts_i2c_client, 0x8B, 0);
+				if (ret < 0) {
+					printk("[Focal][Touch] write value fail");
+					/*return ret;*/
+				}
+				set_charger_exist = 0;
+			}
+		}
 
 #ifdef TPD_PROXIMITY
 
@@ -1777,6 +1800,7 @@ static void tpd_suspend(struct early_suspend *h)
 		}
 	}
 #endif
+	set_charger_exist = 0;
 	mutex_unlock(&i2c_access);
 
 	/*disable_irq_nosync(ts->pdata->intr_gpio);*/

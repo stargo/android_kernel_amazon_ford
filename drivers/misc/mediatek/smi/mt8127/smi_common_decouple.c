@@ -422,7 +422,7 @@ static int smi_larb_init(unsigned int larb, int force_init){
 
     if(0 == regval)
     {
-        SMIMSG("Init OSTD for larb_base: 0x%x\n" , larb_base);
+        SMIDBG(1, "Init OSTD for larb_base: 0x%x\n" , larb_base);
         M4U_WriteReg32(larb_base , SMI_LARB_OSTD_CTRL_EN , 0xffffffff);
     }
     else

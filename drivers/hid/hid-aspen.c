@@ -92,6 +92,8 @@ static unsigned char buf_aspen[] = {0x01, 0x80};
 #define TRACKPAD_LOCK               0xA0
 #define TRACKPAD_UNLOCK             0xA1
 
+#define CAPS_KEY                    0x39
+
 /*
  * Device structure for matched devices
  * @quirks: Currently unused.
@@ -188,12 +190,11 @@ static int aspen_raw_event(struct hid_device *hdev, struct hid_report *report,
 	 u8 *data, int size)
 {
 	struct aspen_device *aspen_dev = hid_get_drvdata(hdev);
-	int ret = 0;
 
 	char keyCode;
 	/* int keyStatus; */
 	int delay_count = 0;
-	int i, clicks = 0;
+	int i, j, clicks = 0;
 	int fID = 0;
 
 	struct input_dev *input = aspen_dev->input;
@@ -209,34 +210,32 @@ static int aspen_raw_event(struct hid_device *hdev, struct hid_report *report,
 	while (!(hdev->claimed & HID_CLAIMED_INPUT) || !aspen_dev->initDone) {
 		delay_count++;
 		DEBUG_MSG("%s: wait for initialization\n", __func__);
-		msleep(500);
+		msleep(125);
 	}
 
-	ASPEN_DEBUG_VERBOSE("%s: event delay time = %d ms\n", __func__, delay_count * 500);
+	ASPEN_DEBUG_VERBOSE("%s: event delay time = %d ms\n", __func__, delay_count * 125);
 	ASPEN_DEBUG_VERBOSE("%s: hdev->claimed = 0x%x, ready to send input event\n", __func__, hdev->claimed);
 
 	switch (report->id) {
 	case REPORT_ID_KEYBOARD:	/* Keyboard event: 0x01 */
 		DEBUG_MSG("%s: Enter:: received REPORT_ID_KEYBOARD event\n", __func__);
-		keyCode = data[3];
-		switch (keyCode) {
-		case 0x39:	/* Handle CapsLock key */
+		for (j = 3; j < size; j++) {
+			keyCode = data[j];
 			DEBUG_MSG("%s: handle Lab126 KEY_CAPSLOCK:  keyCode = 0x%02x\n", __func__, keyCode);
-			if (caps_status) {
-				/* Current Caps status: On ==> changed to Off */
-				DEBUG_MSG("%s: CapsLock status: On ---> Off\n", __func__);
-				caps_status = CAPS_OFF;
-			} else {
-				/* Current Caps status: Off ==> changed to On */
-				DEBUG_MSG("%s: CapsLock status: Off ---> On\n", __func__);
-				caps_status = CAPS_ON;
+			if (keyCode == CAPS_KEY) {
+				if (caps_status) {
+					/* Current Caps status: On ==> changed to Off */
+					DEBUG_MSG("%s: CapsLock status: On ---> Off\n", __func__);
+					caps_status = CAPS_OFF;
+				} else {
+					/* Current Caps status: Off ==> changed to On */
+					DEBUG_MSG("%s: CapsLock status: Off ---> On\n", __func__);
+					caps_status = CAPS_ON;
+				}
+				break;
+			} else if (keyCode == 0) {
+				break;
 			}
-
-			if (ret < 0)
-				DEBUG_MSG("%s: set HID_OUTPUT_REPORT of CapsLock failed\n", __func__);
-
-			/* pass event to system */
-			break;
 		}
 		break;
 
@@ -449,7 +448,7 @@ static int aspen_probe(struct hid_device *hdev, const struct hid_device_id *id)
 
 	init_timer(&aspen->delay_timer);
 	aspen->delay_timer.function = aspen_delay_func;
-	aspen->delay_timer.expires = jiffies + 1*HZ;
+	aspen->delay_timer.expires = jiffies + HZ/8;
 	aspen->delay_timer.data = (unsigned long) aspen;
 	add_timer(&aspen->delay_timer);
 

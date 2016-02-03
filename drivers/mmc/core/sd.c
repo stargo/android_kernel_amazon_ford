@@ -681,6 +681,7 @@ MMC_DEV_ATTR(name, "%s\n", card->cid.prod_name);
 MMC_DEV_ATTR(oemid, "0x%04x\n", card->cid.oemid);
 MMC_DEV_ATTR(serial, "0x%08x\n", card->cid.serial);
 MMC_DEV_ATTR(sclass, "0x%0x\n", card->sd_speed_class);
+MMC_DEV_ATTR(timing, "%u\n", (&card->host->ios)->timing);
 
 static struct attribute *sd_std_attrs[] = {
 	&dev_attr_cid.attr,
@@ -696,6 +697,7 @@ static struct attribute *sd_std_attrs[] = {
 	&dev_attr_oemid.attr,
 	&dev_attr_serial.attr,
 	&dev_attr_sclass.attr,
+	&dev_attr_timing.attr,
 	NULL,
 };
 

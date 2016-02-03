@@ -52,7 +52,7 @@ typedef enum {
 	UNKNOWN_SHUTDOWN,
 	COLD_BOOT_BY_PWR_KEY,
 	COLD_BOOT_BY_USB_CHARGER,
-	COLD_BOOT_BY_EXTERNAL_POWER_SUPPLY,
+	COLD_BOOT_BY_POWER_SUPPLY,
 	WARM_BOOT_BY_SW,
 	WARM_BOOT_BY_KERNEL_PANIC,
 	WARM_BOOT_BY_KERNEL_WDG,
@@ -77,7 +77,7 @@ static const char * const life_cycle_reasons[] = {
 	"Unknown Shutdown",
 	"Cold Boot By Power Key",
 	"Cold Boot By USB Charger",
-	"Cold Boot By External Power Supply",
+	"Cold Boot By Power Supply",
 	"Warm Boot By Software",
 	"Warm Boot By Kernel Panic",
 	"Warm Boot By Kernel Watchdog",
@@ -102,7 +102,7 @@ static const char * const life_cycle_metrics[] = {
 	"unknown_shutdown",
 	"cold_boot_pwr_key",
 	"cold_boot_usb_charger",
-	"cold_boot_external_power_supply",
+	"cold_boot_power_supply",
 	"warm_boot_sw",
 	"warm_boot_kernel_panic",
 	"warm_boot_kernel_wdog",
@@ -152,7 +152,7 @@ static const char * const life_cycle_vitals_key[] = {
 	"Unknown_Shutdown",
 	"Cold_Boot_By_Power_Key",
 	"Cold_Boot_By_USB",
-	"Cold_Boot_By_External_Power_Supply",
+	"Cold_Boot_By_Power_Supply",
 	"Warm_Boot_By_Android",
 	"Warm_Boot_Kernel_Panic",
 	"Warm_Boot_Kernel_Watchdog",
@@ -198,10 +198,10 @@ static struct dev_sol *p_dev_sol;
 
 static int life_cycle_reason_lookup(void)
 {
-	life_cycle_boot_reason boot_reason;
-	life_cycle_shutdown_reason shutdown_reason;
-	life_cycle_thermal_shutdown_reason thermal_shutdown_reason;
-	life_cycle_special_mode s_mode;
+	life_cycle_boot_reason boot_reason = 0;
+	life_cycle_shutdown_reason shutdown_reason = 0;
+	life_cycle_thermal_shutdown_reason thermal_shutdown_reason = 0;
+	life_cycle_special_mode s_mode = 0;
 	bool lcr_found = false;
 
 	if (!p_dev_sol) {
@@ -222,68 +222,7 @@ static int life_cycle_reason_lookup(void)
 	p_dev_sol->sol_ops.read_thermal_shutdown_reason(&thermal_shutdown_reason);
 	p_dev_sol->sol_ops.read_special_mode(&s_mode);
 
-	switch (boot_reason) {
-	case WARMBOOT_BY_SW:
-		p_dev_sol->life_cycle_reason_idx = WARM_BOOT_BY_SW;
-		lcr_found = true;
-		break;
-
-	case WARMBOOT_BY_KERNEL_WATCHDOG:
-		p_dev_sol->life_cycle_reason_idx = WARM_BOOT_BY_KERNEL_WDG;
-		lcr_found = true;
-		break;
-
-	case WARMBOOT_BY_KERNEL_PANIC:
-		p_dev_sol->life_cycle_reason_idx = WARM_BOOT_BY_KERNEL_PANIC;
-		lcr_found = true;
-		break;
-
-	case WARMBOOT_BY_HW_WATCHDOG:
-		p_dev_sol->life_cycle_reason_idx = WARM_BOOT_BY_HW_WDG;
-		lcr_found = true;
-		break;
-
-	case COLDBOOT_BY_USB:
-		p_dev_sol->life_cycle_reason_idx = COLD_BOOT_BY_USB_CHARGER;
-		lcr_found = true;
-		break;
-
-	case COLDBOOT_BY_POWER_KEY:
-		p_dev_sol->life_cycle_reason_idx = COLD_BOOT_BY_PWR_KEY;
-		lcr_found = true;
-		break;
-
-	case COLDBOOT_BY_POWER_SUPPLY:
-		p_dev_sol->life_cycle_reason_idx = COLD_BOOT_BY_EXTERNAL_POWER_SUPPLY;
-		lcr_found = true;
-		break;
-
-	default:
-		break;
-	}
-
-	switch (shutdown_reason) {
-	case SHUTDOWN_BY_SW:
-		p_dev_sol->life_cycle_reason_idx = SW_SHUTDOWN;
-		lcr_found = true;
-		break;
-
-	case SHUTDOWN_BY_LONG_PWR_KEY_PRESS:
-		p_dev_sol->life_cycle_reason_idx = LONG_KEY_PRESSED_PWR_KEY_SHUTDOWN;
-		lcr_found = true;
-		break;
-
-	case SHUTDOWN_BY_UNKNOWN_REASONS:
-		p_dev_sol->life_cycle_reason_idx = UNKNOWN_SHUTDOWN;
-		lcr_found = true;
-		break;
-	default:
-		break;
-	}
-
-	if (lcr_found)
-		return 0;
-
+	/* thermal shutdown is considered as abnormal */
 	switch (thermal_shutdown_reason) {
 	case THERMAL_SHUTDOWN_REASON_BATTERY:
 		p_dev_sol->life_cycle_reason_idx = BATTERY_THERMAL_SHUTDOWN;
@@ -315,6 +254,86 @@ static int life_cycle_reason_lookup(void)
 
 	if (lcr_found)
 		return 0;
+
+	/* boot reason: abnormal */
+	switch (boot_reason) {
+	case WARMBOOT_BY_KERNEL_WATCHDOG:
+		p_dev_sol->life_cycle_reason_idx = WARM_BOOT_BY_KERNEL_WDG;
+		lcr_found = true;
+		break;
+	case WARMBOOT_BY_KERNEL_PANIC:
+		p_dev_sol->life_cycle_reason_idx = WARM_BOOT_BY_KERNEL_PANIC;
+		lcr_found = true;
+		break;
+	case WARMBOOT_BY_HW_WATCHDOG:
+		p_dev_sol->life_cycle_reason_idx = WARM_BOOT_BY_HW_WDG;
+		lcr_found = true;
+		break;
+	default:
+		break;
+	}
+
+	if (lcr_found)
+		return 0;
+
+	/* shutdown reason: abnormal */
+	switch (shutdown_reason) {
+	case SHUTDOWN_BY_LONG_PWR_KEY_PRESS:
+		p_dev_sol->life_cycle_reason_idx = LONG_KEY_PRESSED_PWR_KEY_SHUTDOWN;
+		lcr_found = true;
+		break;
+	case SHUTDOWN_BY_UNKNOWN_REASONS:
+		p_dev_sol->life_cycle_reason_idx = UNKNOWN_SHUTDOWN;
+		lcr_found = true;
+		break;
+	default:
+		break;
+	}
+
+	if (lcr_found)
+		return 0;
+
+	/* boot reason: normal */
+	switch (boot_reason) {
+	case WARMBOOT_BY_SW:
+		p_dev_sol->life_cycle_reason_idx = WARM_BOOT_BY_SW;
+		lcr_found = true;
+		break;
+
+	/* do not report the following to catch the potential */
+	/* sudden power loss case */
+#if 0
+	case COLDBOOT_BY_USB:
+		p_dev_sol->life_cycle_reason_idx = COLD_BOOT_BY_USB_CHARGER;
+		lcr_found = true;
+		break;
+
+	case COLDBOOT_BY_POWER_KEY:
+		p_dev_sol->life_cycle_reason_idx = COLD_BOOT_BY_PWR_KEY;
+		lcr_found = true;
+		break;
+
+	case COLDBOOT_BY_POWER_SUPPLY:
+		p_dev_sol->life_cycle_reason_idx = COLD_BOOT_BY_POWER_SUPPLY;
+		lcr_found = true;
+		break;
+#endif
+	default:
+		break;
+	}
+
+	if (lcr_found)
+		return 0;
+
+	/* shutdown reason: normal */
+	switch (shutdown_reason) {
+	case SHUTDOWN_BY_SW:
+		p_dev_sol->life_cycle_reason_idx = SW_SHUTDOWN;
+		lcr_found = true;
+		break;
+	default:
+		break;
+	}
 
 	return 0;
 }

@@ -657,12 +657,12 @@ const LCM_DRIVER *disphal_get_lcm_driver(const char *lcm_name, unsigned int *lcm
             lcm = lcm_driver_list[i];
             printk("[LCM Auto Detect] [%d] - [%s]\t", i, (lcm->name==NULL)?"unknown":lcm->name);
             lcm->set_util_funcs(&lcm_utils);
-            memset((void*)&s_lcm_params, 0, sizeof(LCM_PARAMS));
-            lcm->get_params(&s_lcm_params);
+			/*memset((void*)&s_lcm_params, 0, sizeof(LCM_PARAMS));
+			// lcm->get_params(&s_lcm_params);
 
-            disphal_init_ctrl_if();
-            LCD_Set_DrivingCurrent(&s_lcm_params);
-            LCD_Init_IO_pad(&s_lcm_params);
+			// disphal_init_ctrl_if();
+			// LCD_Set_DrivingCurrent(&s_lcm_params);
+			// LCD_Init_IO_pad(&s_lcm_params);*/
 
             if(lcm_name != NULL)
             {

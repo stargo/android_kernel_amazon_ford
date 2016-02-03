@@ -170,12 +170,11 @@ int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdata)
 		mt_auxadc_disable_penirq();
 	/*step1 check con2 if auxadc is busy */
 	while ((*(volatile u16 *)AUXADC_CON2) & 0x01) {
-		printk("[adc_api]: wait for module idle\n");
 		msleep(100);
 		idle_count++;
 		if (idle_count > 30) {
 			/*wait for idle time out */
-			printk("[adc_api]: wait for auxadc idle time out\n");
+			printk(KERN_ERR "[adc_api]: wait for auxadc idle time out\n");
 			mutex_unlock(&mutex_get_cali_value);
 			return -1;
 		}
@@ -186,11 +185,10 @@ int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdata)
 
 	/*step3  read channle and make sure old ready bit ==0 */
 	while ((*(volatile u16 *)(AUXADC_DAT0 + dwChannel * 0x04)) & (1 << 12)) {
-		printk("[adc_api]: wait for channel[%d] ready bit clear\n", dwChannel);
 		msleep(10);
 		data_ready_count++;
 		if (data_ready_count > 30) {
-			printk("[adc_api]: wait for channel[%d] ready bit clear time out\n",
+			printk(KERN_ERR "[adc_api]: wait for channel[%d] ready bit clear time out\n",
 			       dwChannel);
 			mutex_unlock(&mutex_get_cali_value);
 			return -2;
@@ -204,12 +202,11 @@ int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdata)
 	/*step5  read channle and make sure  ready bit ==1 */
 	udelay(25);		/*we must dealay here for hw sample cahnnel data */
 	while (0 == ((*(volatile u16 *)(AUXADC_DAT0 + dwChannel * 0x04)) & (1 << 12))) {
-		printk("[adc_api]: wait for channel[%d] ready bit ==1\n", dwChannel);
 		msleep(10);
 		data_ready_count++;
 
 		if (data_ready_count > 30) {
-			printk("[adc_api]: wait for channel[%d] data ready time out\n", dwChannel);
+			printk(KERN_ERR "[adc_api]: wait for channel[%d] data ready time out\n", dwChannel);
 			mutex_unlock(&mutex_get_cali_value);
 			return -3;
 		}
@@ -219,10 +216,7 @@ int IMM_auxadc_GetOneChannelValue(int dwChannel, int data[4], int *rawdata)
 	if (NULL != rawdata) {
 		*rawdata = channel[dwChannel];
 	}
-	printk("[adc_api]: imm mode raw data => channel[%d] = %d\n", dwChannel, channel[dwChannel]);
-	printk("[adc_api]: imm mode => channel[%d] = %d.%02d\n", dwChannel,
-	       (channel[dwChannel] * 150 / AUXADC_PRECISE / 100),
-	       ((channel[dwChannel] * 150 / AUXADC_PRECISE) % 100));
+
 	data[0] = (channel[dwChannel] * 150 / AUXADC_PRECISE / 100);
 	data[1] = ((channel[dwChannel] * 150 / AUXADC_PRECISE) % 100);
 
@@ -244,14 +238,13 @@ int IMM_auxadc_GetOneChannelValue_Cali(int Channel, int *voltage)
 	int rawvalue[4];
 	ret = IMM_auxadc_GetOneChannelValue(Channel, data, rawvalue);
 	if (ret) {
-		printk("[adc_api]:IMM_auxadc_GetOneChannelValue_Cali  get raw value error %d \n",
+		printk(KERN_ERR "[adc_api]:IMM_auxadc_GetOneChannelValue_Cali  get raw value error %d \n",
 		       ret);
 		return -1;
 	}
 	*voltage = (rawvalue[0]) * 1500 / AUXADC_PRECISE;
 	*voltage = *voltage*1000;
 
-	printk("[adc_api]:IMM_auxadc_GetOneChannelValue_Cali  voltage= %d uv \n", *voltage);
 	return 0;
 
 }
@@ -329,12 +322,10 @@ static long adc_udvt_dev_ioctl(struct file *file, unsigned int cmd, unsigned lon
 		break;
 
 	case SET_AUXADC_CON1_SET:
-		printk(KERN_EMERG "[adc_udvt]: adc_using_set_clr_mode = 1\n");
 		adc_using_set_clr_mode = 1;
 		break;
 
 	case SET_AUXADC_CON1_CLR:
-		printk(KERN_EMERG "[adc_udvt]: adc_using_set_clr_mode = 0\n");
 		adc_using_set_clr_mode = 0;
 		break;
 
@@ -561,53 +552,53 @@ static long adc_udvt_dev_ioctl(struct file *file, unsigned int cmd, unsigned lon
 
 	case SET_DET_VOLT:
 		(*(volatile u16 *)AUXADC_DET_VOLT) = pcmd->value;
-		printk(KERN_EMERG "AUXADC_DET_VOLT: 0x%x\n", (*(volatile u16 *)AUXADC_DET_VOLT));
+		printk(KERN_DEBUG "AUXADC_DET_VOLT: 0x%x\n", (*(volatile u16 *)AUXADC_DET_VOLT));
 		break;
 
 	case SET_DET_PERIOD:
 		(*(volatile u16 *)AUXADC_DET_PERIOD) = pcmd->value;
-		printk(KERN_EMERG "AUXADC_DET_PERIOD: 0x%x\n",
+		printk(KERN_DEBUG "AUXADC_DET_PERIOD: 0x%x\n",
 		       (*(volatile u16 *)AUXADC_DET_PERIOD));
 		break;
 
 	case SET_DET_DEBT:
 		(*(volatile u16 *)AUXADC_DET_DEBT) = pcmd->value;
-		printk(KERN_EMERG "AUXADC_DET_DEBT: 0x%x\n", (*(volatile u16 *)AUXADC_DET_DEBT));
+		printk(KERN_DEBUG "AUXADC_DET_DEBT: 0x%x\n", (*(volatile u16 *)AUXADC_DET_DEBT));
 		break;
 
 	case Set_Adc_Channel0:
 		IMM_auxadc_GetOneChannelValue_Cali(0, auxadc_sample_data);
-		printk(KERN_EMERG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
+		printk(KERN_DEBUG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
 
 		break;
 
 	case Set_Adc_Channel1:
 		IMM_auxadc_GetOneChannelValue_Cali(1, auxadc_sample_data);
-		printk(KERN_EMERG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
+		printk(KERN_DEBUG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
 
 		break;
 
 	case Set_Adc_Channel2:
 		IMM_auxadc_GetOneChannelValue_Cali(2, auxadc_sample_data);
-		printk(KERN_EMERG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
+		printk(KERN_DEBUG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
 
 		break;
 
 	case Set_Adc_Channel3:
 		IMM_auxadc_GetOneChannelValue_Cali(3, auxadc_sample_data);
-		printk(KERN_EMERG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
+		printk(KERN_DEBUG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
 
 		break;
 
 	case Set_Adc_Channel4:
 		IMM_auxadc_GetOneChannelValue_Cali(4, auxadc_sample_data);
-		printk(KERN_EMERG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
+		printk(KERN_DEBUG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
 
 		break;
 
 	case Set_Adc_Channel5:
 		IMM_auxadc_GetOneChannelValue_Cali(5, auxadc_sample_data);
-		printk(KERN_EMERG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
+		printk(KERN_DEBUG "Get channel0 voltage value: 0x%x!\n", auxadc_sample_data[0]);
 
 		break;
 
@@ -624,16 +615,11 @@ static int adc_udvt_dev_open(struct inode *inode, struct file *file)
 	/* if(hwEnableClock(MT65XX_PDN_PERI_TP,"Touch")==FALSE) */
 	/* printk(KERN_EMERG"hwEnableClock TP failed.\n"); */
 
-	printk(KERN_EMERG "adc_udvt_dev_open enter!\n");
 	return 0;
 }
 
 static int adc_udvt_dev_read(struct file *file, int __user * buf, size_t size, loff_t * ppos)
 {
-
-
-	printk(KERN_EMERG "adc_udvt_dev_read enter!\n");
-
 	unsigned long p = *ppos;
 	unsigned int count = size;
 	int ret = 0;
@@ -644,10 +630,6 @@ static int adc_udvt_dev_read(struct file *file, int __user * buf, size_t size, l
 
 	ret = IMM_auxadc_GetOneChannelValue(i, data, rawvalue);
 
-	printk("[adc_api]: 1!imm mode raw data => channel[%d] = %d,%d\n", i, rawvalue[0],
-	       *rawvalue);
-
-	printk("[adc_api]:data[0] = %d,data[1] = %d\n", data[0], data[1]);
 	if (copy_to_user(buf, data, count))
 	{
 		ret = -EFAULT;
@@ -657,7 +639,7 @@ static int adc_udvt_dev_read(struct file *file, int __user * buf, size_t size, l
 
 		rawvalue[0] = rawvalue[0] * 1500000 / AUXADC_PRECISE;
 
-		printk("[adc_api]: 2!imm mode raw data => channel[%d] = %d,%d\n", i, rawvalue[0],
+		printk(KERN_DEBUG "[adc_api]: 2!imm mode raw data => channel[%d] = %d,%d\n", i, rawvalue[0],
 		       *rawvalue);
 
 	}
@@ -668,25 +650,19 @@ static int adc_udvt_dev_read(struct file *file, int __user * buf, size_t size, l
 
 static int adc_udvt_dev_write(struct file *file, int __user * buf, size_t size, loff_t * ppos)
 {
-
-
-	printk(KERN_EMERG "adc_udvt_dev_write enter!\n");
-
 	unsigned long p = *ppos;
 	unsigned int count = size;
 	int i = 0, data[4] = { 0 };
 	int ret = 0;
 
 	if (copy_from_user(data, buf, count)) {
-		printk("copy_from_user fail!\n");
+		printk(KERN_ERR "copy_from_user fail!\n");
 		ret = -EFAULT;
 	} else {
 		*ppos += count;
 		ret = count;
-		printk("copy_from_user success!\n");
 	}
 	auxadc_select_channel[0] = data[0];	/*get select channel from user space*/
-	printk("auxadc_select_channel[0] = 0x%x!\n", auxadc_select_channel[0]);
 	return ret;
 
 }
@@ -715,9 +691,9 @@ void adc_udvt_tasklet_fn()
 	res = IMM_auxadc_GetOneChannelValue_Cali(i, data);
 
 	if (res < 0)
-		printk(KERN_EMERG "[adc_udvt]: get data error\n");
+		printk(KERN_ERR "[adc_udvt]: get data error\n");
 	else
-		printk(KERN_EMERG "[adc_udvt]: channel[%2u]=%4u mV\n", i, data[0]);
+		printk(KERN_DEBUG "[adc_udvt]: channel[%2u]=%4u mV\n", i, data[0]);
 	return;
 }
 
@@ -725,7 +701,7 @@ static void mt_auxadc_cal_prepare(void)
 {
 	//mt6582 no voltage calibration
 	int ret;
-	printk("[adc_udvt]: register adc_udvt_dev start!\n");
+
 	ret = misc_register(&adc_udvt_dev);
 	if (ret) {
 		printk("[adc_udvt]: register driver failed (%d)\n", ret); 
@@ -747,7 +723,7 @@ void mt_auxadc_hal_init(void)
 void mt_auxadc_hal_suspend(void)
 {
 	if (disable_clock(MT_PDN_PERI_AUXADC, "AUXADC")) {
-		printk("hwEnableClock AUXADC failed.");
+		printk(KERN_ERR "hwEnableClock AUXADC failed.");
 	}
 
 }
@@ -756,9 +732,9 @@ void mt_auxadc_hal_resume(void)
 {
 
 	if (enable_clock(MT_PDN_PERI_AUXADC, "AUXADC")) {
-		printk("hwEnableClock AUXADC again!!!.");
+		printk(KERN_ERR "hwEnableClock AUXADC again!!!.");
 		if (enable_clock(MT_PDN_PERI_AUXADC, "AUXADC")) {
-			printk("hwEnableClock AUXADC failed.");
+			printk(KERN_ERR "hwEnableClock AUXADC failed.");
 		}
 
 	}
@@ -769,9 +745,9 @@ void mt_auxadc_hal_resume(void)
 
 int mt_auxadc_dump_register(char *buf)
 {
-	printk("[auxadc]: AUXADC_CON0=%x\n", *(volatile u16 *)AUXADC_CON0);
-	printk("[auxadc]: AUXADC_CON1=%x\n", *(volatile u16 *)AUXADC_CON1);
-	printk("[auxadc]: AUXADC_CON2=%x\n", *(volatile u16 *)AUXADC_CON2);
+	printk(KERN_DEBUG "[auxadc]: AUXADC_CON0=%x\n", *(volatile u16 *)AUXADC_CON0);
+	printk(KERN_DEBUG "[auxadc]: AUXADC_CON1=%x\n", *(volatile u16 *)AUXADC_CON1);
+	printk(KERN_DEBUG "[auxadc]: AUXADC_CON2=%x\n", *(volatile u16 *)AUXADC_CON2);
 
 	return sprintf(buf, "AUXADC_CON0:%x\n AUXADC_CON1:%x\n AUXADC_CON2:%x\n",
 		       *(volatile u16 *)AUXADC_CON0, *(volatile u16 *)AUXADC_CON1,

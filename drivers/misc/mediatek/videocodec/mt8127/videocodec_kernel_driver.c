@@ -93,7 +93,7 @@ static VAL_UINT32_T gu4VencPWRCounter = 0;  //mutex : VencPWRLock
 
 static VAL_UINT32_T gu4VdecLockThreadId = 0;
 
-#define MT8127_VCODEC_DEBUG
+// #define MT8127_VCODEC_DEBUG
 #ifdef MT8127_VCODEC_DEBUG
 #undef VCODEC_DEBUG
 #define VCODEC_DEBUG MFV_LOGE

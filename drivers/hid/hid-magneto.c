@@ -122,9 +122,9 @@ static int pmx_raw_event(struct hid_device *hdev, struct hid_report *report,
 
 		delay_count++;
 		DEBUG_MSG("%s: wait for initialization\n", __func__);
-		msleep(500);
+		msleep(125);
 	}
-	DEBUG_MSG("%s: event delay time = %d ms\n", __func__, delay_count * 500);
+	DEBUG_MSG("%s: event delay time = %d ms\n", __func__, delay_count * 125);
 	DEBUG_MSG("%s: hdev->claimed = 0x%x, ready to send input event\n", __func__, hdev->claimed);
 
 	switch (report->id) {
@@ -305,7 +305,7 @@ static int pmx_probe(struct hid_device *hdev, const struct hid_device_id *id)
 
 	init_timer(&pmx->delay_timer);
 	pmx->delay_timer.function = pmx_delay_func;
-	pmx->delay_timer.expires = jiffies + 1*HZ;
+	pmx->delay_timer.expires = jiffies + HZ/8;
 	pmx->delay_timer.data = (unsigned long) pmx;
 	add_timer(&pmx->delay_timer);
 

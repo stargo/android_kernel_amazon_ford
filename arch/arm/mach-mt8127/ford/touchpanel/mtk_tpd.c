@@ -34,11 +34,6 @@
 #define TPD_GET_VELOCITY_CUSTOM_X _IO(TOUCH_IOC_MAGIC,0)
 #define TPD_GET_VELOCITY_CUSTOM_Y _IO(TOUCH_IOC_MAGIC,1)
 
-#define SHOW_TOUCH_VENDOR 1
-#ifdef SHOW_TOUCH_VENDOR
-static char *vendor_name = NULL;
-#endif
-
 extern int tpd_v_magnify_x;
 extern int tpd_v_magnify_y;
 extern UINT32 DISP_GetScreenHeight(void);
@@ -265,16 +260,6 @@ static void tpd_create_attributes(struct device *dev, struct tpd_attrs *attrs)
 		device_create_file(dev, attrs->attr[--num]);
 }
 
-#ifdef SHOW_TOUCH_VENDOR
-static ssize_t show_vendor_name(struct device *dev, struct device_attribute *attr,
-                    char *buf)
-{
-    TPD_DMESG("[mtk-tpd]vendor name: %s\n", vendor_name);
-    return sprintf(buf, "%s\n", vendor_name);
-}
-static DEVICE_ATTR(Vendor_Name, 0440, show_vendor_name, NULL);
-#endif
-
 /* touch panel probe */
 static int tpd_probe(struct platform_device *pdev) {
 		int  touch_type = 1; // 0:R-touch, 1: Cap-touch
@@ -423,14 +408,6 @@ static int tpd_probe(struct platform_device *pdev) {
 
 	if (g_tpd_drv->attrs.num)
 		tpd_create_attributes(&pdev->dev, &g_tpd_drv->attrs);
-
-    #ifdef SHOW_TOUCH_VENDOR
-    device_create_file(&pdev->dev, &dev_attr_Vendor_Name);
-    vendor_name = g_tpd_drv->tpd_device_name;
-    if(NULL == vendor_name) {
-        vendor_name = "no vendor name";
-    }
-    #endif SHOW_TOUCH_VENDOR
 
     return 0;
 }

@@ -113,7 +113,7 @@
 * Static variables
 *******************************************************************************/
 static unsigned char CTPM_FW[] = {
-#include "GJ_Test_V0x16_20150811_app.i"
+#include "FT5436I_Ref_V0x18_20150915_app.i"
 };
 
 struct fts_Upgrade_Info fts_updateinfo[] = {

@@ -112,7 +112,7 @@ void _mali_osk_abort(void)
         /*m4u_dump_debug_registers();*/
     }
 #endif
-#if 0
+#if 1
 	*(int *)0 = 0;
 #endif
 }

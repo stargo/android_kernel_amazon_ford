@@ -1,7 +1,7 @@
 /*
- * Copyright 2014 Solomon Systech Ltd. All rights reserved.
+ * Copyright 2015 Solomon Systech Ltd. All rights reserved.
  *
- *  Date:  2015.8.10 testing build from Vincent
+ *  Date:  2015.8.28 testing build from Vincent
  */
 
 #include "ssd60xx_tp.h"
@@ -52,7 +52,7 @@ static void ssd60xx_interrupt_handler(void);
 static int ssd60xx_event_handler(void *unused);
 
 /* ############################################################################### */
-#define DRIVER_VERSION "20150813_1.5"
+#define DRIVER_VERSION "20150828_1.1"
 
 #define FINGERNO 5
 
@@ -143,17 +143,24 @@ Refer to ForceTouch_threshold, now set to 3/4 of it
 /*
 Usage of E5 (index filter register):
   - enable:1/disable:0 (D15)
-  [not use] - hysteresis count (D14 - D11)
+  - penalty enable:1/disable:0 (D14)
+  - penalty pressure scale (D13 - D12)
+  - 1st frame penalty enable:1/disable:0 (D11)
   - no. of fingers to turn on (D10 - D08)
   - min. frames to confirm finger (D7 - D0)
 */
 #define INDEX_FILTER_REG  0xE5
 static unsigned int jitter_filter_on =0;
+static unsigned int jitter_filter_penalty_on =0;
 static unsigned int ssd_jitter_count = 0;
 static unsigned int jitter_finger_num = 0;
 static unsigned int jitter_finger_num_backup = 0;
-//static unsigned int jitter_hysteresis_cnt = 0;
-unsigned int jitter_filter_count[FINGERNO] = { 0 };
+static unsigned int jitter_max_pressure = 0;
+static unsigned int jitter_penalty[FINGERNO] = { 0 };
+static unsigned int jitter_filter_count[FINGERNO] = { 0 };
+static unsigned int  jitter_filter_penalty_pressure_scale = 0;
+static unsigned int  jitter_filter_penalty_1st_frame = 0;
+
 #endif
 
 /*
@@ -988,19 +995,23 @@ Usage of FB (Edge Filter):
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_SSL_JITTER_FILTER
-   /*
+/*
 Usage of E5 (index filter register):
   - enable:1/disable:0 (D15)
-  [not use] - hysteresis count (D14 - D11)
+  - penalty enable:1/disable:0 (D14)
+  - penalty pressure scale (D13 - D12)
+  - 1st frame penalty enable:1/disable:0 (D11)
   - no. of fingers to turn on (D10 - D08)
   - min. frames to confirm finger (D7 - D0)
 */
 	reg_value = ssd60xx_read_reg(ssl_priv->client, INDEX_FILTER_REG, 2);
 	jitter_filter_on = reg_value>>15;
-	ssd_jitter_count = reg_value&0xff;
-	jitter_finger_num = (reg_value>>8)&0x07;
+	jitter_filter_penalty_on = (reg_value>>14)&0x1;
+  jitter_filter_penalty_pressure_scale = (reg_value>>12)&0x3 + 1;
+  jitter_filter_penalty_1st_frame = (reg_value>>11)&0x1;
+        ssd_jitter_count = reg_value&0xff;
+        jitter_finger_num = (reg_value>>8)&0x07;
         jitter_finger_num_backup = jitter_finger_num;
-        //jitter_hysteresis_cnt = (reg_value>>11)&0x0f;
 #endif 
 
 
@@ -1071,18 +1082,49 @@ int ssd_hard_press_hack(int *arrayX, int *arrayY, int *arrayP, int finger_num)
 #endif
 
 #ifdef CONFIG_TOUCHSCREEN_SSL_JITTER_FILTER
+void find_max_pressure(/*unsigned int *x_pos, unsigned int *y_pos, */unsigned int *pressure) {
+  int i, max = 0;
+  for (i = 0; i < FINGERNO; i++) {
+    if (pressure[i] > max) {
+      max = pressure[i];
+    }
+  }
+  jitter_max_pressure = max;
+}
 
 void ssd_jitter_filter(unsigned short i, unsigned int *x_pos, unsigned int *y_pos, unsigned int *pressure, int finger_num)
 {
         int reg_value = ssd60xx_read_reg(ssl_priv->client, PALM_STATUS_REG, 2);
         unsigned short palm_status = (reg_value & 0x1);
+
         if (jitter_filter_on == 0) {
             return;
         }
 
         if (*x_pos == 0xFFF) {
             jitter_filter_count[i] = 0;
+            jitter_penalty[i] = 0;
             return;
+        }
+        if (jitter_filter_penalty_on == 0 || upmu_is_chr_det() == KAL_FALSE) {
+          jitter_penalty[i] = 0;
+        }
+
+        else {
+          if (ssl_priv->FingerX[i] == 0xFFF || jitter_filter_penalty_1st_frame == 0 ) {
+            if (*pressure == 0) {
+              // don't touch it
+            }
+            else if (jitter_max_pressure == 0) {
+              jitter_penalty[i] = 0; // prevent error
+            }
+            else {
+              jitter_penalty[i] = jitter_max_pressure / (*pressure * jitter_filter_penalty_pressure_scale);
+            }
+            if (jitter_penalty[i] > 5) {
+              jitter_penalty[i] = 5;
+            }
+          }
         }
 
         if (upmu_is_chr_det()) {
@@ -1118,10 +1160,10 @@ void ssd_jitter_filter(unsigned short i, unsigned int *x_pos, unsigned int *y_po
             }
         }
         // else, if counter already started and not yet finished counting and finger is still reported (finger is reported if you get to here!), keep rejecting
-        else if (jitter_filter_count[i] < ssd_jitter_count) {
+        else if (jitter_filter_count[i] < (ssd_jitter_count+jitter_penalty[i])) {
             *x_pos = *y_pos = 0xFFF;
             *pressure = 0;
-            SSL_DEBUG("=======ssl_jittr_filter finger %d,  count %d, finger number= %d \n", i, jitter_filter_count[i], finger_num);
+            SSL_DEBUG("=======ssl_jittr_filter finger %d,  count %d, finger number= %d (penalty=%d)\n", i, jitter_filter_count[i], finger_num, jitter_penalty[i]);
             jitter_filter_count[i]++;
         }
         // otherwise, this finger shall be reported (note, that might be a real finger or prolonged noise)
@@ -1196,7 +1238,7 @@ static int ssd60xx_work(void)
                         FingerY[i] = xpos;      //For MTK Remapping
                         FingerX[i] = ypos;      //For MTK Remapping
                         FingerP[i] = press;
-                        SSL_DEBUG("start: %i, %i, %i (%i,%i) \n", i, edge_filter_x[i],edge_filter_y[i],FingerX[i],FingerY[i]); 
+                        SSL_DEBUG("start: %i, %i, %i (%i,%i) \n", i, edge_filter_x[i],edge_filter_y[i],FingerX[i],FingerY[i]);
 #ifdef FORCE_EDGE_FILTER
                         if (edge_filter_enable) {
                           if (ssl_priv->FingerX[i] == 0xFFF || edge_filter_switch[i] == 1) {
@@ -1359,7 +1401,7 @@ static int ssd60xx_work(void)
         if((FingerCount == 0 && Touch_status > Reg_C4)||(FingerCount == 1 && Touch_status > Reg_C5)||
           (FingerCount == 2 && Touch_status > Reg_C6) || (FingerCount == 3 && Touch_status > Reg_C7)||
 		(FingerCount >= 4  && Touch_status > Reg_C8)) {
-                  //if (ForceTouch_state == 0 || (EventStatus&0x0008) != 0) {
+                  //if (ForceTouch_state == 0/* && ForceTouch_alive == 0*/) {
                   if (!(ForceTouch_state != 0 && (EventStatus&0x0008) == 0)) {
                     SSL_DEBUG("ssd60xx 0x78 = %x , FingerCount = %d (%i) \n",Touch_status , FingerCount, ForceTouch_state);
                     ssd60xx_write_reg(ssl_priv->client, 0xA2, 0x00, 0x01, 2);
@@ -1394,6 +1436,7 @@ static int ssd60xx_work(void)
 			ssl_priv->FingerX[i] = 0xFFF;
 			ssl_priv->FingerY[i] = 0xFFF;
 			ssl_priv->FingerP[i] = 0xFFF;
+			jitter_penalty[i] = 0;
 		}
 		ssd60xx_touch_down_up(0, 0, 0, 0, 0);
                 //ForceTouch_alive = 0;
@@ -1404,6 +1447,9 @@ static int ssd60xx_work(void)
                   ssd60xx_touch_down_up(0, 0, 0, 0, 0);
                 }
                 else {
+#ifdef CONFIG_TOUCHSCREEN_SSL_JITTER_FILTER
+                  find_max_pressure(/*FingerX, FingerY, */FingerP);
+#endif
                   for (i = 0; i < FINGERNO; i++) {
 #ifdef CONFIG_TOUCHSCREEN_SSL_JITTER_FILTER
                           ssd_jitter_filter(i, &FingerX[i], &FingerY[i], &FingerP[i], FingerCount);

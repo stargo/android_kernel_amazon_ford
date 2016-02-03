@@ -693,6 +693,12 @@ static long MTK_M4U_ioctl(struct file * a_pstFile,
             	return -EFAULT;
             }
 
+            if (m4u_module.eModuleID >= M4U_CLNTMOD_MAX || m4u_module.eModuleID < 0)
+                return -EINVAL;
+
+            if (m4u_module.MVAStart != 0 &&  m4u_module.MVAStart != -1)
+                return -EINVAL;
+
             if(m4u_module.MVAStart == -1) //work around for wrap layer
             {
                 m4u_module.MVAStart = m4u_user_v2p(m4u_module.BufAddr);
@@ -773,6 +779,8 @@ static long MTK_M4U_ioctl(struct file * a_pstFile,
             M4UDBG("MTK_M4U_T_DEALLOC_MVA, eModuleID:%d, VABuf:0x%x, Length:%d, MVAStart=0x%x \r\n",
             	m4u_module.eModuleID, m4u_module.BufAddr, m4u_module.BufSize, m4u_module.MVAStart);
 
+            if (m4u_module.eModuleID >= M4U_CLNTMOD_MAX || m4u_module.eModuleID < 0)
+                return -EINVAL;
 
             pMvaInfo = m4u_delete_from_garbage_list(&m4u_module, a_pstFile);
 
@@ -816,6 +824,12 @@ static long MTK_M4U_ioctl(struct file * a_pstFile,
             	M4UMSG(" MTK_M4U_T_ALLOC_MVA, copy_from_user failed: %d\n", ret);
             	return -EFAULT;
             }
+
+           if (m4u_module.eModuleID >= M4U_CLNTMOD_MAX || m4u_module.eModuleID < 0)
+                return -EINVAL;
+
+           if (m4u_module.MVAStart != 0)
+                return -EINVAL;
 
             {
                 mva_info_t *pList = NULL;
@@ -861,6 +875,8 @@ static long MTK_M4U_ioctl(struct file * a_pstFile,
             }
             M4UDBG("MTK_M4U_T_DEALLOC_MVA_SEC, eModuleID:%d, VABuf:0x%x, Length:%d, MVAStart=0x%x \r\n",
             	m4u_module.eModuleID, m4u_module.BufAddr, m4u_module.BufSize, m4u_module.MVAStart);
+            if (m4u_module.eModuleID >= M4U_CLNTMOD_MAX || m4u_module.eModuleID < 0)
+                return -EINVAL;
 
             pMvaInfo = m4u_delete_from_garbage_list(&m4u_module, a_pstFile);
 
@@ -1023,6 +1039,10 @@ static long MTK_M4U_ioctl(struct file * a_pstFile,
             	M4UMSG(" MTK_M4U_T_CONFIG_PORT, copy_from_user failed: %d \n", ret);
             	return -EFAULT;
             }
+
+            if (m4u_port.ePortID >= M4U_CLNTMOD_MAX || m4u_port.ePortID < 0)
+                  return -EINVAL;
+
             M4UDBG("ePortID=%d, Virtuality=%d, Security=%d, Distance=%d, Direction=%d \n",
                 m4u_port.ePortID, m4u_port.Virtuality, m4u_port.Security, m4u_port.Distance, m4u_port.Direction);
 
