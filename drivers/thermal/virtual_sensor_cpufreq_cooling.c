@@ -28,7 +28,7 @@
 #include <linux/device.h>
 #include <linux/thermal.h>
 #include <linux/cpumask.h>
-#include <thermal_core.h>
+#include "thermal_core.h"
 
 
 /**
