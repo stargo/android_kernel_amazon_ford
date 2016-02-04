@@ -370,8 +370,10 @@ int spm_mtcmos_ctrl_vdec(int state)
 
         spm_write(SPM_VDE_PWR_CON, spm_read(SPM_VDE_PWR_CON) & ~SRAM_PDN);
 
+#ifndef CONFIG_MT8127_KEXEC
         while ((spm_read(SPM_VDE_PWR_CON) & VDE_SRAM_ACK)) {
         }
+#endif
 
 #if 0
         udelay(1); 
@@ -434,8 +436,10 @@ int spm_mtcmos_ctrl_isp(int state)
 
         spm_write(SPM_ISP_PWR_CON, spm_read(SPM_ISP_PWR_CON) & ~SRAM_PDN);
 
+#ifndef CONFIG_MT8127_KEXEC
         while ((spm_read(SPM_ISP_PWR_CON) & ISP_SRAM_ACK)) {
         }
+#endif
 
 #if 0
         udelay(1); 
@@ -656,8 +660,10 @@ int spm_mtcmos_ctrl_mfg(int state)
 
         spm_write(SPM_MFG_PWR_CON, spm_read(SPM_MFG_PWR_CON) & ~SRAM_PDN);
 
+#ifndef CONFIG_MT8127_KEXEC
         while ((spm_read(SPM_MFG_PWR_CON) & MFG_SRAM_ACK)) {
         }
+#endif
 
 #if 0
         udelay(1); 
@@ -725,8 +731,10 @@ int spm_mtcmos_ctrl_infra(int state)
 
         spm_write(SPM_IFR_PWR_CON, spm_read(SPM_IFR_PWR_CON) & ~SRAM_PDN);
 
+#ifndef CONFIG_MT8127_KEXEC
         while ((spm_read(SPM_IFR_PWR_CON) & IFR_SRAM_ACK)) {
         }
+#endif
 
 #if 0
         udelay(1); 

@@ -1124,8 +1124,10 @@ static int __init register_tz_driver(void)
  *   None
  *
  ******************************************************************************/
+#ifndef CONFIG_MT8127_KEXEC
 static struct class*  pTzClass  = NULL;
 static struct device* pTzDevice = NULL;
+#endif
 
 static int __init tz_client_init(void)
 {
@@ -1188,6 +1190,7 @@ static int __init tz_client_init(void)
     tz_ndbg_init();
     #endif
 
+    #ifndef CONFIG_MT8127_KEXEC
     /* create /dev/trustzone automaticly */
     pTzClass = class_create(THIS_MODULE, TZ_DEV_NAME);
     if (IS_ERR(pTzClass)) {
@@ -1196,6 +1199,7 @@ static int __init tz_client_init(void)
         return ret;
     }
     pTzDevice = device_create(pTzClass, NULL, tz_client_dev, NULL, TZ_DEV_NAME);
+    #endif
 
     tzret = KREE_CreateSession(TZ_TA_MEM_UUID, &session);
     if(tzret!=TZ_RESULT_SUCCESS)

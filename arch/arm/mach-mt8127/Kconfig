@@ -39,5 +39,11 @@ config MAX_DRAM_SIZE_SUPPORT
 
 endmenu
 
+config MT8127_KEXEC
+	bool "MT8127 KEXEC"
+	default n
+	help
+	  Select if you are using running this kernel with kexec from another kernel.
+
 
 endif

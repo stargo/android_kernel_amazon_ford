@@ -298,6 +298,7 @@ static TZ_RESULT tz_ree_service(u32 op, u8 param[REE_SERVICE_BUFFER_SIZE])
 
 TZ_RESULT KREE_InitTZ(void)
 {
+#ifndef CONFIG_MT8127_KEXEC
     uint32_t paramTypes;
     MTEEC_PARAM param[4];
     TZ_RESULT ret;
@@ -308,6 +309,9 @@ TZ_RESULT KREE_InitTZ(void)
                               paramTypes, param);
 
     return ret;
+#else
+    return TZ_RESULT_SUCCESS;
+#endif
 }
 
 

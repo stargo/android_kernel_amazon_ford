@@ -3870,7 +3870,15 @@ static void cg_all_force_on(void)
 		struct cg_clk *clk = id_to_clk(i);
 		BUG_ON(!clk || !clk->ops);
 
+#ifdef CONFIG_MT8127_KEXEC
+		if (i < MT_CG_AUDIO_AFE || i > MT_CG_AUDIO_SPDF2_CK) {
+		clk_err("Enabling clock %d\n", i);
+#endif
 		clk->ops->enable(clk);
+#ifdef CONFIG_MT8127_KEXEC
+		clk_err("Enabled clock %d\n", i);
+		}
+#endif
 #if WORKAROUND_DAPC
 		clk->state = PWR_ON;
 		clk->grp->mask |= clk->mask;
@@ -3916,6 +3924,14 @@ static void cg_bootup_pdn(void)
 		MT_CG_DISP1_DPI_ENGINE,
 		MT_CG_DISP1_LVDS_PIXEL_CLOCK,
 		MT_CG_DISP1_LVDS_CTS_CLOCK,
+#ifdef CONFIG_MT8127_KEXEC
+		MT_CG_AUDIO_AFE,
+		MT_CG_AUDIO_I2S,
+		MT_CG_AUDIO_APLL_TUNER_CK,
+		MT_CG_AUDIO_HDMI_CK,
+		MT_CG_AUDIO_SPDF_CK,
+		MT_CG_AUDIO_SPDF2_CK,
+#endif
 	};
 
 	int len = ARRAY_SIZE(ignored_pdn);
@@ -3931,7 +3947,13 @@ static void cg_bootup_pdn(void)
 			continue;
 
 		clk = id_to_clk(i);
+#ifdef CONFIG_MT8127_KEXEC
+		clk_err("Disabling clock %d\n", i);
+#endif
 		clk->ops->disable(clk);
+#ifdef CONFIG_MT8127_KEXEC
+		clk_err("Disabled clock %d\n", i);
+#endif
 #if WORKAROUND_DAPC
 		clk->state = PWR_DOWN;
 		clk->grp->state &= ~(clk->mask);

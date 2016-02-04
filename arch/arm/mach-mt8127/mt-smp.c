@@ -163,6 +163,14 @@ static void __cpuinit mt_wakeup_cpu(int cpu)
 #endif
     HOTPLUG_INFO("SLAVE%d_MAGIC_NUM:%x\n", cpu, secure_magic_num[cpu-1]);
 #ifdef CONFIG_HOTPLUG_WITH_POWER_CTRL
+#ifdef CONFIG_MT8127_KEXEC
+    if (is_secondary_cpu_first_boot) {
+        spm_mtcmos_ctrl_cpu1(STA_POWER_DOWN, 0);
+        spm_mtcmos_ctrl_cpu2(STA_POWER_DOWN, 0);
+        spm_mtcmos_ctrl_cpu3(STA_POWER_DOWN, 0);
+        is_secondary_cpu_first_boot = 0;
+    }
+#endif
     if (is_secondary_cpu_first_boot)
     {
     	printk("mt_wakeup_cpu: first boot!(%d)\n", cpu);
