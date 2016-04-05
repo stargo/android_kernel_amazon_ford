@@ -201,7 +201,6 @@ static void init_lcm_registers(void)
 #endif
 	  
 }
-
 static void lcm_init(void)
 {
 #ifndef BUILD_LK
@@ -209,20 +208,29 @@ static void lcm_init(void)
 #else
 	printf("[IND][LK] %s\n", __func__);
 #endif
+}
 
+static void lcm_init_power(void)
+{
+#ifndef BUILD_LK
+	printk("[IND][K] %s\n", __func__);
+#else
+	printf("[IND][LK] %s\n", __func__);
+#endif
 	lcd_reset(0);
-	MDELAY(50);
-	lcd_reset(1);
-
+	MDELAY(1);
 	upmu_set_rg_vgp1_vosel(0x5);
 	upmu_set_rg_vgp1_en(0x1);
+	MDELAY(1);
 
-	MDELAY(20);
+	lcd_reset(1);
+
+	MDELAY(10);
 
 	lcd_power_en(1);
-	MDELAY(50);
-
+	MDELAY(20);
 }
+
 
 static void lcm_suspend(void)
 {
@@ -262,20 +270,24 @@ static void lcm_resume(void)
 	snprintf(buf, sizeof(buf), "%s:lcd:resume=1;CT;1:NR", __func__);
 	log_to_metrics(ANDROID_LOG_INFO, "LCDEvent", buf);
 #endif
+}
 
+static void lcm_resume_power(void)
+{
 	lcd_reset(0);
-	MDELAY(50);
-	lcd_reset(1);
-
+	MDELAY(1);
 #ifndef BUILD_LK
 	printk("[IND][K] %s\n", __func__);
 	hwPowerOn(MT6323_POWER_LDO_VGP1,VOL_2800,"lcm");
 #else
 	printf("[IND][LK] %s\n", __func__);
 #endif
-	MDELAY(20);
+	MDELAY(1);
+	lcd_reset(1);
+	MDELAY(10);
+
 	lcd_power_en(1);
-	MDELAY(50);
+	MDELAY(20);
 }
 
 static int lcm_compare_id(void)
@@ -284,15 +296,17 @@ static int lcm_compare_id(void)
 }
 
 
-LCM_DRIVER hx8282_a01_lvds_dpi_vdo_lcm_drv = 
+LCM_DRIVER hx8282_a01_lvds_dpi_vdo_lcm_drv_kd = 
 {
-	.name		= "hx8282_a01_lvds_dpi_vdo",
+	.name		= "hx8282_a01_lvds_dpi_vdo_kd",
 	.set_util_funcs = lcm_set_util_funcs,
 	.get_params 	= lcm_get_params,
 	.init			= lcm_init,
+	.init_power     = lcm_init_power,
 	.suspend		= lcm_suspend,
 	.suspend_power  = lcm_suspend_power,
 	.resume 		= lcm_resume,
+	.resume_power   = lcm_resume_power,
 	.compare_id    = lcm_compare_id,
 
 };

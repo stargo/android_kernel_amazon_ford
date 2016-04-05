@@ -73,6 +73,11 @@ static u32 MTK_FB_PAGES = 0;
 static u32 fb_xres_update = 0;
 static u32 fb_yres_update = 0;
 
+#define SHOW_LCM_NAME
+#ifdef SHOW_LCM_NAME
+static char lcm_name[256] = {0};
+#endif
+
 #define MTK_FB_XRESV (ALIGN_TO(MTK_FB_XRES, disphal_get_fb_alignment()))
 #define MTK_FB_YRESV (ALIGN_TO(MTK_FB_YRES, disphal_get_fb_alignment()) * MTK_FB_PAGES) /* For page flipping */
 #define MTK_FB_BYPP  ((MTK_FB_BPP + 7) >> 3)
@@ -3077,6 +3082,17 @@ static void mtkfb_free_resources(struct mtkfb_device *fbdev, int state)
 
 extern char* saved_command_line;
 char mtkfb_lcm_name[256] = {0};
+
+#ifdef SHOW_LCM_NAME
+static ssize_t show_lcm_name(struct device *dev, struct device_attribute *attr,
+                    char *buf)
+{
+    MTKFB_MSG("[mtk-tpd]vendor name: %s\n", lcm_name);
+    return sprintf(buf, "%s\n", lcm_name);
+}
+static DEVICE_ATTR(Lcm_Name, 0440, show_lcm_name, NULL);
+#endif
+
 BOOL mtkfb_find_lcm_driver(void)
 {
     BOOL ret = FALSE;
@@ -3217,6 +3233,7 @@ static int mtkfb_probe(struct device *dev)
     int                    init_state;
     int                    r = 0;
     char *p = NULL;
+    char *q = NULL;
     MSG_FUNC_ENTER();
 
 
@@ -3398,6 +3415,25 @@ static int mtkfb_probe(struct device *dev)
     MSG(INFO, "MTK framebuffer initialized vram=%lu\n", fbdev->fb_size_in_byte);
 
     MSG_FUNC_LEAVE();
+
+#ifdef SHOW_LCM_NAME
+    p = strstr(saved_command_line, "lcm=");
+
+    if(p != NULL) {
+        // we can't find lcm string in the command line
+        p += 4;
+        if((p - saved_command_line) < strlen(saved_command_line+1)) {
+            q = p;
+            while(*q != ' ' && *q != '\0')
+                q++;
+
+            device_create_file(&pdev->dev, &dev_attr_Lcm_Name);
+            memset((void*)lcm_name, 0, sizeof(lcm_name));
+            strncpy((char*)lcm_name, (char*)p, (int)(q-p));
+        }
+    }
+#endif
+
     return 0;
 
 cleanup:

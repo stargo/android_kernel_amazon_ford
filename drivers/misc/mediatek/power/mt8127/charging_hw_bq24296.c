@@ -701,6 +701,7 @@ static kal_uint32 charging_enable(void *data)
 	{
 		bq24296_set_en_hiz(0x0);
 		bq24296_set_chg_config(0x1); // charger enable
+		bq24296_set_otg_config(0x0); // disable otg mode when charging
 	}
 	else
 	{

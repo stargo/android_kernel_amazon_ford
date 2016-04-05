@@ -597,7 +597,8 @@ static ssize_t fts_fwupdate_store(struct device *dev,
 {
 	/*struct fts_ts_data *data = NULL;*/
 	u8 uc_host_fm_ver;
-	int i_ret;
+	u8 uc_tp_vendor_id = 0;
+	int i_ret,i;
 	struct i2c_client *client = container_of(dev, struct i2c_client, dev);
 	/*data = (struct fts_ts_data *) i2c_get_clientdata(client);*/
 	mutex_lock(&fts_input_dev->mutex);
@@ -606,11 +607,15 @@ static ssize_t fts_fwupdate_store(struct device *dev,
 #if GTP_ESD_PROTECT
 	apk_debug_flag = 1;
 #endif
-
-	i_ret = fts_ctpm_fw_upgrade_with_i_file(client);
+	for(i = 0; i <= 10; i++) {
+		fts_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
+		if((uc_tp_vendor_id == OFILM_ID) || (uc_tp_vendor_id == TPV_ID))
+			break;
+	}
+	i_ret = fts_ctpm_fw_upgrade_with_i_file(client, uc_tp_vendor_id);
 	if (i_ret == 0) {
 		msleep(300);
-		uc_host_fm_ver = fts_ctpm_get_i_file_ver();
+		uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id);
 		dev_dbg(dev, "%s [FTS] upgrade to new version 0x%x\n", __func__,
 			uc_host_fm_ver);
 	} else {

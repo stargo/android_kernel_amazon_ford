@@ -73,6 +73,9 @@ extern int Enable_BATDRV_LOG;
 #ifdef CONFIG_AMAZON_METRICS_LOG
 #include <linux/metricslog.h>
 #endif
+#ifdef CONFIG_AMAZON_SIGN_OF_LIFE
+#include <linux/sign_of_life.h>
+#endif
 
 //----------------------------------------------------------------------test
 #define MT65XX_UPLL 3
@@ -712,6 +715,9 @@ void pwrkey_int_handler(void)
 				if(long_pwrkey_press)   //500ms
 				{
 					xlog_printk(ANDROID_LOG_INFO, "Power/PMIC", "[pmic_thread_kthread] Power Key Pressed during kernel power off charging, reboot OS\r\n");
+#ifdef CONFIG_AMAZON_SIGN_OF_LIFE
+                    life_cycle_set_boot_reason(WARMBOOT_BY_SW);
+#endif
 					arch_reset(0, NULL);
 				}
 		}

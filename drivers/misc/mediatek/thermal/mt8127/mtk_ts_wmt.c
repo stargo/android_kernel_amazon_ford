@@ -190,7 +190,7 @@ static struct thermal_dev_ops mtktswmt_fops = {
 };
 
 struct thermal_dev_params mtktswmt_tdp = {
-	.offset = 15000,
+	.offset = -5000,
 	.alpha = 1000,
 	.weight = 0
 };

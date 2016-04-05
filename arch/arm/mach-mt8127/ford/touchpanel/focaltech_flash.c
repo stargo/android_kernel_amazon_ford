@@ -112,8 +112,12 @@
 /*******************************************************************************
 * Static variables
 *******************************************************************************/
-static unsigned char CTPM_FW[] = {
+static unsigned char CTPM_FW_TPV[] = {
 #include "FT5436I_Ref_V0x18_20150915_app.i"
+};
+
+static unsigned char CTPM_FW_OFILM[] = {
+#include "AmazonA+_5436i_ofilm0x51_V0x19_20151222_app.i"
 };
 
 struct fts_Upgrade_Info fts_updateinfo[] = {
@@ -1105,9 +1109,9 @@ int fts_5x36_ctpm_fw_upgrade(struct i2c_client *client, u8 *pbt_buf,
 	u8 auc_i2c_write_buf[10];
 	u8 bt_ecc;
 	int i_ret;
-	int fw_filenth = sizeof(CTPM_FW);
+	int fw_filenth = dw_lenth;
 
-	if (CTPM_FW[fw_filenth - 12] == 30) {
+	if (pbt_buf[fw_filenth - 12] == 30) {
 		is_5336_fwsize_30 = 1;
 	} else {
 		is_5336_fwsize_30 = 0;
@@ -1138,14 +1142,10 @@ int fts_5x36_ctpm_fw_upgrade(struct i2c_client *client, u8 *pbt_buf,
 		fts_i2c_read(client, auc_i2c_write_buf, 4, reg_val, 2);
 		if (reg_val[0] == fts_updateinfo_curr.upgrade_id_1
 		    && reg_val[1] == fts_updateinfo_curr.upgrade_id_2) {
-			dev_dbg(&client->dev,
-				"[FTS] Step 3: CTPM ID OK,ID1 = 0x%x,ID2 = 0x%x\n",
-				reg_val[0], reg_val[1]);
+			printk("[FTS] Step 3: CTPM ID OK,ID1 = 0x%x,ID2 = 0x%x\n", reg_val[0], reg_val[1]);
 			break;
 		} else {
-			dev_err(&client->dev,
-				"[FTS] Step 3: CTPM ID FAILD,ID1 = 0x%x,ID2 = 0x%x\n",
-				reg_val[0], reg_val[1]);
+			printk("[FTS] Step 3: CTPM ID FAILD,ID1 = 0x%x,ID2 = 0x%x\n", reg_val[0], reg_val[1]);
 			continue;
 		}
 
@@ -2012,20 +2012,19 @@ int fts_ctpm_fw_upgrade_with_app_file(struct i2c_client *client,
 * Output: no
 * Return: fw version
 ***********************************************************************/
-int fts_ctpm_get_i_file_ver(void)
+int fts_ctpm_get_i_file_ver(u8 vendor_id)
 {
 	u16 ui_sz;
-	ui_sz = sizeof(CTPM_FW);
-	if (ui_sz > 2) {
-		if (fts_updateinfo_curr.CHIP_ID == 0x36)
-			return CTPM_FW[0x10a];
-		else if (fts_updateinfo_curr.CHIP_ID == 0x58)
-			return CTPM_FW[0x1D0A];	/*0x010A + 0x1C00*/
-		else
-			return CTPM_FW[ui_sz - 2];
+	if(vendor_id==OFILM_ID) {
+		ui_sz = sizeof(CTPM_FW_OFILM);
+		if (ui_sz > 2)
+		return CTPM_FW_OFILM[ui_sz - 2];
+	} else if(vendor_id==TPV_ID) {
+		ui_sz = sizeof(CTPM_FW_TPV);
+		if (ui_sz > 2)
+		return CTPM_FW_TPV[ui_sz - 2];
 	}
-
-	return 0x00;		/*default value */
+	return 0x00;	/*default value */
 }
 
 /************************************************************************
@@ -2150,15 +2149,23 @@ int fts_ctpm_update_project_setting(struct i2c_client *client)
 * Output: no
 * Return: fail <0
 ***********************************************************************/
-int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
+int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client,u8 vendor_id)
 {
 	u8 *pbt_buf = NULL;
 	int i_ret = 0;
-	int fw_len = sizeof(CTPM_FW);
+	int fw_len = 0;
 
 	/*judge the fw that will be upgraded
 	 * if illegal, then stop upgrade and return.
 	 */
+	if(vendor_id==OFILM_ID) {
+		fw_len= sizeof(CTPM_FW_OFILM);
+		pbt_buf = CTPM_FW_OFILM;
+	} else if(vendor_id==TPV_ID) {
+		fw_len= sizeof(CTPM_FW_TPV);
+		pbt_buf = CTPM_FW_TPV;
+	}
+
 	if ((fts_updateinfo_curr.CHIP_ID == 0x11)
 	    || (fts_updateinfo_curr.CHIP_ID == 0x12)
 	    || (fts_updateinfo_curr.CHIP_ID == 0x13)
@@ -2172,29 +2179,23 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 			return -EIO;
 		}
 
-		if ((CTPM_FW[fw_len - 8] ^ CTPM_FW[fw_len - 6]) == 0xFF
-		    && (CTPM_FW[fw_len - 7] ^ CTPM_FW[fw_len - 5]) == 0xFF
-		    && (CTPM_FW[fw_len - 3] ^ CTPM_FW[fw_len - 4]) == 0xFF) {
+		if ((pbt_buf[fw_len - 8] ^ pbt_buf[fw_len - 6]) == 0xFF
+		    && (pbt_buf[fw_len - 7] ^ pbt_buf[fw_len - 5]) == 0xFF
+		    && (pbt_buf[fw_len - 3] ^ pbt_buf[fw_len - 4]) == 0xFF) {
 			/*FW upgrade */
-			pbt_buf = CTPM_FW;
+			/*pbt_buf = CTPM_FW;*/
 			/*call the upgrade function */
 			if ((fts_updateinfo_curr.CHIP_ID == 0x55)
 			    || (fts_updateinfo_curr.CHIP_ID == 0x08)
 			    || (fts_updateinfo_curr.CHIP_ID == 0x0a)) {
-				i_ret =
-				    fts_5x06_ctpm_fw_upgrade(client, pbt_buf,
-							     sizeof(CTPM_FW));
+				i_ret = fts_5x06_ctpm_fw_upgrade(client, pbt_buf, fw_len);
 			} else if ((fts_updateinfo_curr.CHIP_ID == 0x11)
 				   || (fts_updateinfo_curr.CHIP_ID == 0x12)
 				   || (fts_updateinfo_curr.CHIP_ID == 0x13)
 				   || (fts_updateinfo_curr.CHIP_ID == 0x14)) {
-				i_ret =
-				    fts_5x36_ctpm_fw_upgrade(client, pbt_buf,
-							     sizeof(CTPM_FW));
+				i_ret = fts_5x36_ctpm_fw_upgrade(client, pbt_buf, fw_len);
 			} else if ((fts_updateinfo_curr.CHIP_ID == 0x06)) {
-				i_ret =
-				    fts_6x06_ctpm_fw_upgrade(client, pbt_buf,
-							     sizeof(CTPM_FW));
+				i_ret = fts_6x06_ctpm_fw_upgrade(client, pbt_buf, fw_len);
 			}
 			if (i_ret != 0)
 				dev_err(&client->dev,
@@ -2211,9 +2212,8 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 			dev_err(&client->dev, "%s:FW length error\n", __func__);
 			return -EIO;
 		}
-		pbt_buf = CTPM_FW;
 		i_ret =
-		    fts_6x36_ctpm_fw_upgrade(client, pbt_buf, sizeof(CTPM_FW));
+		    fts_6x36_ctpm_fw_upgrade(client, pbt_buf, fw_len);
 		if (i_ret != 0)
 			dev_err(&client->dev, "%s:upgrade failed. err.\n",
 				__func__);
@@ -2223,10 +2223,9 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 			return -EIO;
 		}
 		/*FW upgrade */
-		pbt_buf = CTPM_FW;
 		/*call the upgrade function */
 		i_ret =
-		    fts_5x46_ctpm_fw_upgrade(client, pbt_buf, sizeof(CTPM_FW));
+		    fts_5x46_ctpm_fw_upgrade(client, pbt_buf, fw_len);
 		if (i_ret != 0) {
 			dev_err(&client->dev, "[FTS] upgrade failed. err=%d.\n",
 				i_ret);
@@ -2242,10 +2241,9 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 		}
 
 		/*FW upgrade */
-		pbt_buf = CTPM_FW;
 		/*call the upgrade function */
 		i_ret =
-		    fts_5822_ctpm_fw_upgrade(client, pbt_buf, sizeof(CTPM_FW));
+		    fts_5822_ctpm_fw_upgrade(client, pbt_buf, fw_len);
 		if (i_ret != 0) {
 			dev_err(&client->dev, "[FTS] upgrade failed. err=%d.\n",
 				i_ret);
@@ -2261,10 +2259,9 @@ int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client)
 		}
 
 		/*FW upgrade */
-		pbt_buf = CTPM_FW;
 		/*call the upgrade function */
 		i_ret =
-		    fts_5x26_ctpm_fw_upgrade(client, pbt_buf, sizeof(CTPM_FW));
+		    fts_5x26_ctpm_fw_upgrade(client, pbt_buf, fw_len);
 		if (i_ret != 0) {
 			dev_err(&client->dev, "[FTS] upgrade failed. err=%d.\n",
 				i_ret);
@@ -2288,28 +2285,33 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 {
 	u8 uc_host_fm_ver = FTS_REG_FW_VER;
 	u8 uc_tp_fm_ver;
-	int i_ret;
+	u8 uc_tp_vendor_id = 0;
+	int i_ret,i;
 	u8 chip_id;
 	fts_read_reg(client, FTS_REG_CHIP_ID, &chip_id);
 	fts_read_reg(client, FTS_REG_FW_VER, &uc_tp_fm_ver);
-	uc_host_fm_ver = fts_ctpm_get_i_file_ver();
+	for(i = 0; i <= 10; i++) {
+		fts_read_reg(client, FTS_REG_VENDOR_ID, &uc_tp_vendor_id);
+		if((uc_tp_vendor_id == OFILM_ID) || (uc_tp_vendor_id == TPV_ID)) /*0xf2 TPV | 0x51 OFilm*/
+			break;
+	}
+	uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id);
+	printk("[FTS] uc_tp_fm_ver = 0x%x, uc_host_fm_ver = 0x%x, uc_tp_vendor_id = 0x%x\n",
+		uc_tp_fm_ver, uc_host_fm_ver, uc_tp_vendor_id);
 	/*if (uc_tp_fm_ver == FTS_REG_FW_VER || //the firmware in touch panel maybe corrupted
 	     uc_tp_fm_ver < uc_host_fm_ver //the firmware in host flash is new, need upgrade*
 	     ) */
 	if ((0x12!=chip_id) || (uc_tp_fm_ver < uc_host_fm_ver)) {
 		msleep(100);
-		dev_dbg(&client->dev,
-			"[FTS] uc_tp_fm_ver = 0x%x, uc_host_fm_ver = 0x%x\n",
+		printk("[FTS] uc_tp_fm_ver = 0x%x, uc_host_fm_ver = 0x%x\n",
 			uc_tp_fm_ver, uc_host_fm_ver);
-		i_ret = fts_ctpm_fw_upgrade_with_i_file(client);
+		i_ret = fts_ctpm_fw_upgrade_with_i_file(client,uc_tp_vendor_id);
 		if (i_ret == 0) {
 			msleep(300);
-			uc_host_fm_ver = fts_ctpm_get_i_file_ver();
-			dev_dbg(&client->dev,
-				"[FTS] upgrade to new version 0x%x\n",
-				uc_host_fm_ver);
+			uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id);
+			printk("[FTS] upgrade to new version 0x%x\n", uc_host_fm_ver);
 		} else {
-			pr_err("[FTS] upgrade failed ret=%d.\n", i_ret);
+			printk("[FTS] upgrade failed ret=%d.\n", i_ret);
 			return -EIO;
 		}
 	}

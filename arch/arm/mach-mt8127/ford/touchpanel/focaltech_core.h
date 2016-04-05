@@ -144,6 +144,10 @@
 #define TPD_RES_Y                					1280
 #define TPD_CALIBRATION_MATRIX  			{962, 0, 0, 0, 1600, 0, 0, 0};
 
+#define TPV_ID 0xf2
+#define OFILM_ID 0x51
+
+
 /*#define TPD_HAVE_CALIBRATION
 #define TPD_HAVE_TREMBLE_ELIMINATION
 #define TPD_CLOSE_POWER_IN_SLEEP*/
@@ -295,8 +299,8 @@ extern int HidI2c_To_StdI2c(struct i2c_client *client);
 extern int fts_ctpm_fw_upgrade_with_app_file(struct i2c_client *client,
 					     char *firmware_name);
 extern int fts_ctpm_auto_clb(struct i2c_client *client);
-extern int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client);
-extern int fts_ctpm_get_i_file_ver(void);
+extern int fts_ctpm_fw_upgrade_with_i_file(struct i2c_client *client, u8 vendor_id);
+extern int fts_ctpm_get_i_file_ver(u8 vendor_id);
 extern int fts_remove_sysfs(struct i2c_client *client);
 extern void fts_release_apk_debug_channel(void);
 extern int fts_ctpm_auto_upgrade(struct i2c_client *client);

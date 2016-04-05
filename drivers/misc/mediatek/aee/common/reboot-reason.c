@@ -33,7 +33,8 @@ static struct proc_dir_entry *aee_rr_file;
 #define BR_REBOOT_PANIC	(BR_REBOOT_START + RTC_REBOOT_REASON_PANIC)
 #define BR_REBOOT_SW_WDT	(BR_REBOOT_START + RTC_REBOOT_REASON_SW_WDT)
 #define BR_REBOOT_FROM_POC	(BR_REBOOT_START + RTC_REBOOT_REASON_FROM_POC)
-#define BR_MAXIMUM		(BR_REBOOT_START + 4)
+#define BR_REBOOT_INTO_POC	(BR_REBOOT_START + RTC_REBOOT_REASON_FROM_POC+1)
+#define BR_MAXIMUM		(BR_REBOOT_START + 5)
 
 extern int aee_rr_reboot_reason_show(struct seq_file *m, void *v);
 int __weak aee_rr_reboot_reason_show(struct seq_file *m, void *v)
@@ -54,7 +55,8 @@ static const char * const boot_reason_messages[] = {
 	"Warm Reboot",
 	"Kernel Panic Reboot",
 	"SW Watchdog Reboot",
-	"Reboot From Power-Off-Charging"
+	"Reboot From Power-Off-Charging",
+	"Reboot Into Power-Off-Charging"
 };
 
 static const char * const boot_reason_values[] = {
@@ -69,7 +71,8 @@ static const char * const boot_reason_values[] = {
 	"warm reboot",
 	"panic reboot",
 	"swwdt reboot",
-	"poc reboot"
+	"poc reboot",
+	"reboot into poc"
 };
 
 typedef enum {
@@ -174,6 +177,9 @@ static void print_boot_shutdown_reason(void)
 			s_boot_reason = BR_UNKNOWN;
 		}
 #ifdef CONFIG_MTK_KERNEL_POWER_OFF_CHARGING
+		if (s_boot_reason == BR_WDT && (g_boot_mode == KERNEL_POWER_OFF_CHARGING_BOOT
+			|| g_boot_mode == LOW_POWER_OFF_CHARGING_BOOT))
+			s_boot_reason = BR_REBOOT_INTO_POC;
 		if ((g_boot_mode != KERNEL_POWER_OFF_CHARGING_BOOT)
 				&& (g_boot_mode != LOW_POWER_OFF_CHARGING_BOOT))
 			rtc_mark_reboot_reason(RTC_REBOOT_REASON_WARM);

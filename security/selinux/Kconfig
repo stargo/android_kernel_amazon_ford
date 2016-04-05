@@ -72,6 +72,13 @@ config SECURITY_SELINUX_KERN_PERMISSIVE
 	help
 	This allows kernel code to set enforcing/permissive mode at runtime.
 
+config SECURITY_SELINUX_KERN_PERMISSIVE
+	bool "Allow kernel to set SELinux enforcing/permissive mode"
+	depends on SECURITY_SELINUX_DEVELOP
+	default n
+	help
+	  This allows kernel code to set enforcing/permissive mode at runtime.
+
 config SECURITY_SELINUX_AVC_STATS
 	bool "NSA SELinux AVC Statistics"
 	depends on SECURITY_SELINUX

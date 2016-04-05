@@ -1428,12 +1428,25 @@ void mt_mt65xx_led_set(struct led_classdev *led_cdev, enum led_brightness level)
 			}
 			else
 			{
+				int a, b;
 				if(lcmindex==1) {/*TXD LCM*/
-					led_data->level = led_data->level*233/255; /*max led level = 233*/	
+					//map 5~255 to 100 ~ 934
+                                        a = 834;
+					b = 83;
+					//led_data->level = led_data->level*233/255; /*max led level = 233*/	
+				} else {
+					// map 5 ~255 to 100 ~1023
+					a = 923;
+					b = 81;
 				}
-				LEDS_DEBUG("[LED]Set Backlight directly %d at time %lu\n",led_data->level,jiffies);
+				LEDS_DEBUG("[LED]Set Backlight directly %d at time %lu\n(a=%i,b=%i)",led_data->level,jiffies, a, b);
 				//mt_mt65xx_led_set_cust(&led_data->cust, led_data->level); 
-				disp_aal_notify_backlight_changed( (((1 << MT_LED_INTERNAL_LEVEL_BIT_CNT) - 1)*led_data->level + 127)/255 );
+				if(led_data->level==0)
+					disp_aal_notify_backlight_changed(0);
+				else
+					disp_aal_notify_backlight_changed(((a*led_data->level)/250) + b);
+
+//(((1 << MT_LED_INTERNAL_LEVEL_BIT_CNT) - 1)*led_data->level + 127)/255 );
 			}
 		}
 #else

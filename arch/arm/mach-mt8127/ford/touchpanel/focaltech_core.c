@@ -217,6 +217,8 @@ static int p_point_num;
 static u8 buf_addr[2] = { 0 };
 static u8 buf_value[2] = { 0 };
 
+unsigned char ft_vendor_id = 0;
+
 /*******************************************************************************
 * 5.Global variable or extern global variabls/functions
 *******************************************************************************/
@@ -1298,11 +1300,17 @@ static int __devinit tpd_probe(struct i2c_client *client,
 	fts_i2c_read(fts_i2c_client, &uc_reg_addr, 0, &uc_reg_value, 1);
 	printk("mtk_tpd[FTS] Firmware version = 0x%x\n", uc_reg_value);
 
+	uc_reg_addr = FTS_REG_VENDOR_ID;
+	fts_i2c_write(fts_i2c_client, &uc_reg_addr, 1);
+	fts_i2c_read(fts_i2c_client, &uc_reg_addr, 0, &uc_reg_value, 1);
+	ft_vendor_id = uc_reg_value;
+	printk("mtk_tpd[FTS] Vendor id is %x.\n", uc_reg_value);
+
 	uc_reg_addr = FTS_REG_CHIP_ID;
 	fts_i2c_write(fts_i2c_client, &uc_reg_addr, 1);
 	retval =
 	    fts_i2c_read(fts_i2c_client, &uc_reg_addr, 0, &uc_reg_value, 1);
-	printk("mtk_tpd[FTS] chip id is %d.\n", uc_reg_value);
+	printk("mtk_tpd[FTS] chip id is 0x%x.\n", uc_reg_value);
 	if (retval < 0) {
 		printk
 		    ("mtk_tpd[FTS] Read I2C error! driver NOt load!! CTP chip id is %d.\n",
@@ -1783,7 +1791,7 @@ static void tpd_suspend(struct early_suspend *h)
 #ifdef TPD_CLOSE_POWER_IN_SLEEP
 	hwPowerDown(TPD_POWER_SOURCE, "TP");
 #else
-	if ((fts_updateinfo_curr.CHIP_ID == 0x59)) {
+	if (1) {/*((fts_updateinfo_curr.CHIP_ID == 0x59)) {*/
 		/*i2c_smbus_write_i2c_block_data(fts_i2c_client, 0xA5, 1, &data);  //TP enter sleep mode*/
 		ret = fts_write_reg(fts_i2c_client, 0xA5, data);
 		if (ret < 0) {

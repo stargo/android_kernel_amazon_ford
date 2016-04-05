@@ -402,9 +402,9 @@ static struct thermal_zone_device_ops mtkts_bts_dev_ops = {
 /* =========== bts thermal param handling ========== */
 
 struct thermal_dev_params mtkts_bts_tdp = {
-	.offset = 2700,
+	.offset = -1000,
 	.alpha = 15,
-	.weight = 500
+	.weight = 113
 };
 
 static int mtkts_bts_show_params(struct device *dev,

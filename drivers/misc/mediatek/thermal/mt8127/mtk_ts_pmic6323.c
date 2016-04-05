@@ -307,9 +307,9 @@ static struct thermal_dev_ops mtktspmic_fops = {
 };
 
 struct thermal_dev_params mtktspmic_tdp = {
-	.offset = 26000,
+	.offset = 18000,
 	.alpha = 4,
-	.weight = 375
+	.weight = 450
 };
 
 static int mtktspmic_show_params(struct device *dev,

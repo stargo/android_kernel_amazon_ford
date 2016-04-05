@@ -201,6 +201,7 @@ extern LCM_DRIVER ili9806e_dsi_vdo_fwvga_drv;
 extern LCM_DRIVER hx8282_a01_lvds_dpi_vdo_lcm_drv;
 extern LCM_DRIVER hx8282_a01_lvds_dpi_vdo_lcm_drv_txd;
 extern LCM_DRIVER hx8282_a01_lvds_dpi_vdo_lcm_drv_tpv3;
+extern LCM_DRIVER hx8282_a01_lvds_dpi_vdo_lcm_drv_kd;
 
 LCM_DRIVER* lcm_driver_list[] = 
 {
@@ -214,6 +215,10 @@ LCM_DRIVER* lcm_driver_list[] =
 
 #if defined(HX8282_A01_LVDS_DPI_VDO_TPV3)
 	&hx8282_a01_lvds_dpi_vdo_lcm_drv_tpv3,
+#endif
+
+#if defined(HX8282_A01_LVDS_DPI_VDO_KD)
+	&hx8282_a01_lvds_dpi_vdo_lcm_drv_kd,
 #endif
 
 #if defined(OTM1283A_HD720_DSI_VDO_TM)

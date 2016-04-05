@@ -221,9 +221,9 @@ static struct thermal_dev_ops mtktsbattery_fops = {
 };
 
 struct thermal_dev_params mtktsbattery_tdp = {
-	.offset = -9750,
+	.offset = -9500,
 	.alpha = 7,
-	.weight = 125
+	.weight = 437
 };
 
 static int mtktsbattery_show_params(struct device *dev,

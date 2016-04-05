@@ -53,10 +53,12 @@ struct cpufreq_cooling_device {
 	struct cpumask allowed_cpus;
 	struct cpufreq_cooling_device *notify_device;
 	struct notifier_block nb;
+	struct list_head node;
 };
 
 static DEFINE_IDR(cpufreq_idr);
 static DEFINE_MUTEX(cooling_cpufreq_lock);
+static LIST_HEAD(cpufreq_device_list);
 
 static unsigned int cpufreq_dev_count;
 /* notify_table passes value to the CPUFREQ_ADJUST callback function. */
@@ -296,6 +298,7 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
 	unsigned int cpuid, clip_freq;
 	struct cpumask *mask = &cpufreq_device->allowed_cpus;
 	unsigned int cpu = cpumask_any(mask);
+	struct cpufreq_cooling_device *pos = NULL;
 
 
 	/* Check if the old cooling action is same as new cooling action */
@@ -309,6 +312,12 @@ static int cpufreq_apply_cooling(struct cpufreq_cooling_device *cpufreq_device,
 	cpufreq_device->cpufreq_state = cooling_state;
 	cpufreq_device->cpufreq_val = clip_freq;
 	cpufreq_device->notify_device = cpufreq_device;
+
+	list_for_each_entry(pos, &cpufreq_device_list, node) {
+		if ((pos->cpufreq_val != 0) &&
+			(pos->cpufreq_val < cpufreq_device->cpufreq_val))
+			return 0;
+	}
 
 	for_each_cpu(cpuid, mask) {
 		if (is_cpufreq_valid(cpuid))
@@ -498,6 +507,7 @@ cpufreq_cooling_register(const struct cpumask *clip_cpus)
 	cpufreq_register_notifier(&(cpufreq_dev->nb),
 				  CPUFREQ_POLICY_NOTIFIER);
 	cpufreq_dev_count++;
+	list_add(&cpufreq_dev->node, &cpufreq_device_list);
 
 	mutex_unlock(&cooling_cpufreq_lock);
 

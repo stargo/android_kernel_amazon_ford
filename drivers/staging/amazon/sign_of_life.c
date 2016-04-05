@@ -27,10 +27,6 @@
 #include <asm/uaccess.h>
 #include <linux/sign_of_life.h>
 
-#ifdef CONFIG_AMAZON_METRICS_LOG
-#include <linux/metricslog.h>
-#endif
-
 #define DEV_SOL_VERSION     "1.0"
 #define DEV_SOL_PROC_NAME   "life_cycle_reason"
 #define MAX_SIZE             10
@@ -273,9 +269,6 @@ static int life_cycle_reason_lookup(void)
 		break;
 	}
 
-	if (lcr_found)
-		return 0;
-
 	/* shutdown reason: abnormal */
 	switch (shutdown_reason) {
 	case SHUTDOWN_BY_LONG_PWR_KEY_PRESS:
@@ -469,27 +462,6 @@ int __weak life_cycle_platform_init(sign_of_life_ops *sol_ops)
 	return 0;
 }
 
-#ifdef CONFIG_AMAZON_METRICS_LOG
-#define LIFE_CYCLE_METRICS_STR_LEN 256
-void life_cycle_log_to_metrics(void)
-{
-	char buf[LIFE_CYCLE_METRICS_STR_LEN+1];
-	char *lifecycle_metrics_prefix = "life_cycle_metrics";
-
-	/* Log in metrics */
-	snprintf(buf, LIFE_CYCLE_METRICS_STR_LEN, "%s:lc_reason=%s;CT;1:NR",
-		 lifecycle_metrics_prefix,
-		 life_cycle_metrics[p_dev_sol->life_cycle_reason_idx]);
-	log_to_metrics(ANDROID_LOG_INFO, "LifeCycleReason", buf);
-	log_counter_to_vitals(ANDROID_LOG_INFO,
-		"Kernel", "Kernel",
-		life_cycle_vitals_source[p_dev_sol->life_cycle_reason_idx],
-		life_cycle_vitals_key[p_dev_sol->life_cycle_reason_idx],
-		1, "count",
-		life_cycle_vitals_value2[p_dev_sol->life_cycle_reason_idx], VITALS_NORMAL);
-}
-#endif
-
 static int __init dev_sol_init(void)
 {
 	printk(KERN_INFO "Amazon: sign of life device driver init\n");
@@ -515,10 +487,6 @@ static int __init dev_sol_init(void)
 
 	/* clean up the life cycle reason settings */
 	p_dev_sol->sol_ops.lcr_reset();
-
-#ifdef CONFIG_AMAZON_METRICS_LOG
-	life_cycle_log_to_metrics();
-#endif
 
 	return 0;
 }
