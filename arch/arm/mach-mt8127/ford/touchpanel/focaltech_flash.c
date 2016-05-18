@@ -117,7 +117,7 @@ static unsigned char CTPM_FW_TPV[] = {
 };
 
 static unsigned char CTPM_FW_OFILM[] = {
-#include "AmazonA+_5436i_ofilm0x51_V0x19_20151222_app.i"
+#include "AmazonA+_5436i_ofilm0x51_V0x1a_20160128_app.i"
 };
 
 struct fts_Upgrade_Info fts_updateinfo[] = {
@@ -2295,6 +2295,7 @@ int fts_ctpm_auto_upgrade(struct i2c_client *client)
 		if((uc_tp_vendor_id == OFILM_ID) || (uc_tp_vendor_id == TPV_ID)) /*0xf2 TPV | 0x51 OFilm*/
 			break;
 	}
+
 	uc_host_fm_ver = fts_ctpm_get_i_file_ver(uc_tp_vendor_id);
 	printk("[FTS] uc_tp_fm_ver = 0x%x, uc_host_fm_ver = 0x%x, uc_tp_vendor_id = 0x%x\n",
 		uc_tp_fm_ver, uc_host_fm_ver, uc_tp_vendor_id);

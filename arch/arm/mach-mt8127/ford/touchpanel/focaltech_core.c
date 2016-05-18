@@ -217,8 +217,6 @@ static int p_point_num;
 static u8 buf_addr[2] = { 0 };
 static u8 buf_value[2] = { 0 };
 
-unsigned char ft_vendor_id = 0;
-
 /*******************************************************************************
 * 5.Global variable or extern global variabls/functions
 *******************************************************************************/
@@ -1303,7 +1301,6 @@ static int __devinit tpd_probe(struct i2c_client *client,
 	uc_reg_addr = FTS_REG_VENDOR_ID;
 	fts_i2c_write(fts_i2c_client, &uc_reg_addr, 1);
 	fts_i2c_read(fts_i2c_client, &uc_reg_addr, 0, &uc_reg_value, 1);
-	ft_vendor_id = uc_reg_value;
 	printk("mtk_tpd[FTS] Vendor id is %x.\n", uc_reg_value);
 
 	uc_reg_addr = FTS_REG_CHIP_ID;
