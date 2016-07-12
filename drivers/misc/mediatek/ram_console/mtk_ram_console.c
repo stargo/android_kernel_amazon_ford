@@ -559,7 +559,7 @@ static int __init ram_console_init(struct ram_console_buffer *buffer, size_t buf
 		buffer->sig = REBOOT_REASON_SIG;
 	}
 	if ((buffer->off_console != 0 && buffer->off_linux + ALIGN(sizeof(struct last_reboot_reason), 64) == buffer->off_console) &&
-		(buffer_size == (buffer->off_console + buffer->size))) {
+		(buffer->size != 0)) {
 		pr_err("ram_console: log size 0x%x, start 0x%x, off_console 0x%x, buffer_size 0x%x\n", buffer->size, buffer->start, buffer->off_console, buffer_size);
 		ram_console_save_old(buffer);
 	} else {

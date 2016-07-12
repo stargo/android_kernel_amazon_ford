@@ -2514,16 +2514,25 @@ WMT_unlocked_ioctl (
 
 		}
 		break;
-		
+
         case WMT_IOCTL_SET_PATCH_NUM: {
 			pAtchNum = arg;
-			WMT_INFO_FUNC(" get patch num from launcher = %d\n",pAtchNum);
-			wmt_lib_set_patch_num(pAtchNum);
+			if (pAtchNum == 0 || pAtchNum > MAX_PATCH_NUM) {
+				WMT_ERR_FUNC("Invalid Num=(%d)\n", pAtchNum);
+				iRet = -1;
+				break;
+			}
+
 			pPatchInfo = kzalloc(sizeof(WMT_PATCH_INFO)*pAtchNum,GFP_ATOMIC);
 			if (!pPatchInfo) {
 				WMT_ERR_FUNC("allocate memory fail!\n");
+				iRet = -EFAULT;
+				pAtchNum = 0;
 				break;
 			}
+
+			WMT_INFO_FUNC("Get Num=(%d)\n", pAtchNum);
+			wmt_lib_set_patch_num(pAtchNum);
 		}
 		break;
 
@@ -2532,12 +2541,12 @@ WMT_unlocked_ioctl (
 			P_WMT_PATCH_INFO pTemp = NULL;
 			UINT32 dWloadSeq;
 			static UINT32 counter = 0;
-			
+
 			if (!pPatchInfo) {
 				WMT_ERR_FUNC("NULL patch info pointer\n");
 				break;
 			}
-            
+
             if (copy_from_user(&wMtPatchInfo, (void *)arg, sizeof(WMT_PATCH_INFO))) {
                 WMT_ERR_FUNC("copy_from_user failed at %d\n", __LINE__);
                 iRet = -EFAULT;

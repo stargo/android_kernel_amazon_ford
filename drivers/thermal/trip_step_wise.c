@@ -37,7 +37,7 @@ static int trip_step_wise_throttle(struct thermal_zone_device *tz, int trip)
 	struct thermal_instance *tz_instance, *cd_instance;
 	struct thermal_cooling_device *cdev;
 	unsigned long target = 0;
-	char data[10];
+	char data[32];
 	char *envp[] = { data, NULL };
 	unsigned long cur_state, max_state;
 
@@ -82,11 +82,14 @@ static int trip_step_wise_throttle(struct thermal_zone_device *tz, int trip)
 		mutex_unlock(&cdev->lock);
 
 		if (cur_state != target) {
+			pr_info("before updating cdev: thermal device %s state change, cur %ld target %ld\n",
+				 tz->type, cur_state, target);
 			thermal_cdev_update(cdev);
-			pr_info("thermal device %s state change, cur %ld target %ld\n",
+                        cdev->ops->get_cur_state(cdev, &target);
+			pr_info("after updating cdev: thermal device %s state change, cur %ld target %ld\n",
 				 tz->type, cur_state, target);
 
-			snprintf(data, sizeof(data), "THERMAL_STATE=%ld", cur_state);
+			snprintf(data, sizeof(data), "THERMAL_STATE=%ld", target);
 			kobject_uevent_env(&tz->device.kobj, KOBJ_CHANGE, envp);
 		}
 	}

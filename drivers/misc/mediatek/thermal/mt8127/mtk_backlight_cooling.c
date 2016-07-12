@@ -141,12 +141,10 @@ static struct platform_driver mtk_backlight_cooling_driver = {
 struct mtk_cooler_platform_data mtk_backlight_cooling_pdata = {
 	.type = "backlight",
 	.state = 0,
-	.max_state = 11,
-	.level = 76,
+	.max_state = 4,
+	.level = 255,
 	.levels = {
-		76, 76, 76, 76,
-		76, 76, 76, 76,
-		76, 76, 76, 76,
+		255, 204, 153, 102, 51
 	},
 };
 

@@ -804,6 +804,34 @@ void ion_unmap_kernel(struct ion_client *client, struct ion_handle *handle)
 }
 EXPORT_SYMBOL(ion_unmap_kernel);
 
+static struct mutex debugfs_mutex;
+static struct rb_root *ion_root_client;
+static int is_client_alive(struct ion_client *client)
+{
+	struct rb_node *node;
+	struct ion_client *tmp;
+	struct ion_device *dev;
+
+	node = ion_root_client->rb_node;
+	dev = container_of(ion_root_client, struct ion_device, clients);
+
+	down_read(&dev->lock);
+	while (node) {
+		tmp = rb_entry(node, struct ion_client, node);
+		if (client < tmp) {
+			node = node->rb_left;
+		} else if (client > tmp) {
+			node = node->rb_right;
+		} else {
+			up_read(&dev->lock);
+			return 1;
+		}
+	}
+
+	up_read(&dev->lock);
+	return 0;
+}
+
 static int ion_debug_client_show(struct seq_file *s, void *unused)
 {
 	struct ion_client *client = s->private;
@@ -812,7 +840,17 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 	const char *names[ION_NUM_HEAP_IDS] = {NULL};
 	int i;
 
+	mutex_lock(&debugfs_mutex);
+	if (!is_client_alive(client)) {
+		seq_printf(s, "ion_client 0x%p dead, can't dump its buffers\n",
+			client);
+		mutex_unlock(&debugfs_mutex);
+		return 0;
+	}
+
 	mutex_lock(&client->lock);
+	seq_printf(s, "%16.s %8.s %8.s %8.s\n",
+			"heap_name", "pid", "size", "handle_count");
 	for (n = rb_first(&client->handles); n; n = rb_next(n)) {
 		struct ion_handle *handle = rb_entry(n, struct ion_handle,
 						     node);
@@ -821,10 +859,13 @@ static int ion_debug_client_show(struct seq_file *s, void *unused)
 		if (!names[id])
 			names[id] = handle->buffer->heap->name;
 		sizes[id] += handle->buffer->size;
+		struct ion_buffer *buffer = handle->buffer;
+		seq_printf(s, "%16.s %3d %8zu %3d\n", buffer->heap->name,
+				client->pid, buffer->size, buffer->handle_count);
 	}
 	mutex_unlock(&client->lock);
-
-	seq_printf(s, "%16.16s: %16.16s\n", "heap_name", "size_in_bytes");
+	mutex_unlock(&debugfs_mutex);
+	seq_printf(s, "\n%16.16s: %16.16s\n", "heap_name", "size_in_bytes");
 	for (i = 0; i < ION_NUM_HEAP_IDS; i++) {
 		if (!names[i])
 			continue;
@@ -974,6 +1015,7 @@ void __ion_client_destroy(struct ion_client *client, int from_kern)
 	struct rb_node *n;
 
 	pr_debug("%s: %d\n", __func__, __LINE__);
+	mutex_lock(&debugfs_mutex);
 	while ((n = rb_first(&client->handles))) {
 		struct ion_handle *handle = rb_entry(n, struct ion_handle,
 						     node);
@@ -1002,6 +1044,7 @@ void __ion_client_destroy(struct ion_client *client, int from_kern)
 #endif
 
 	kfree(client);
+	mutex_unlock(&debugfs_mutex);
 }
 
 void ion_client_destroy(struct ion_client *client)
@@ -1649,6 +1692,7 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 	seq_printf(s, "orphaned allocations (info is from last known client):"
 		   "\n");
 	mutex_lock(&dev->buffer_lock);
+	mutex_lock(&debugfs_mutex);
 	for (n = rb_first(&dev->buffers); n; n = rb_next(n)) {
 		struct ion_buffer *buffer = rb_entry(n, struct ion_buffer,
 						     node);
@@ -1664,6 +1708,7 @@ static int ion_debug_heap_show(struct seq_file *s, void *unused)
 		}
 	}
 	mutex_unlock(&dev->buffer_lock);
+	mutex_unlock(&debugfs_mutex);
 	seq_printf(s, "----------------------------------------------------\n");
 	seq_printf(s, "%16.s %16zu\n", "total orphaned",
 		   total_orphaned_size);
@@ -1833,6 +1878,8 @@ debugfs_done:
 	/* Create ION Debug DB Root */
 	ion_debug_create_db(idev->debug_root);
 #endif
+	ion_root_client = &idev->clients;
+	mutex_init(&debugfs_mutex);
 	return idev;
 }
 

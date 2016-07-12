@@ -1095,6 +1095,10 @@ config MTK_BMA253
 	bool "Accelerometer BMA253 for MediaTek package"
 	default n
 
+config MTK_MC3410
+	bool "Accelerometer MC3410 for MediaTek package"
+	default n
+
 config MTK_MPU6515A
         bool "MPU6515A for MediaTek package"
         default n

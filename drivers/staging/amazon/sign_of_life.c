@@ -293,9 +293,6 @@ static int life_cycle_reason_lookup(void)
 		lcr_found = true;
 		break;
 
-	/* do not report the following to catch the potential */
-	/* sudden power loss case */
-#if 0
 	case COLDBOOT_BY_USB:
 		p_dev_sol->life_cycle_reason_idx = COLD_BOOT_BY_USB_CHARGER;
 		lcr_found = true;
@@ -310,7 +307,7 @@ static int life_cycle_reason_lookup(void)
 		p_dev_sol->life_cycle_reason_idx = COLD_BOOT_BY_POWER_SUPPLY;
 		lcr_found = true;
 		break;
-#endif
+
 	default:
 		break;
 	}

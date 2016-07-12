@@ -772,7 +772,7 @@ static struct mtk_thermal_platform_data virtual_sensor_thermal_data = {
 	.num_trips = 5,
 	.mode = THERMAL_DEVICE_DISABLED,
 	.polling_delay = 1000,
-	.trips[0] = {.temp = 41000, .type = THERMAL_TRIP_ACTIVE, .hyst = 0,
+	.trips[0] = {.temp = 50250, .type = THERMAL_TRIP_ACTIVE, .hyst = 0,
 		     .cdev[0] = {
 			.type = "thermal-cpufreq-1", .upper = 1, .lower = 0},
 		     .cdev[1] = {
@@ -780,7 +780,7 @@ static struct mtk_thermal_platform_data virtual_sensor_thermal_data = {
 		     .cdev[2] = {
 			.type = "charger", .upper = 1, .lower = 0},
 	},
-	.trips[1] = {.temp = 42000, .type = THERMAL_TRIP_ACTIVE, .hyst = 0,
+	.trips[1] = {.temp = 50500, .type = THERMAL_TRIP_ACTIVE, .hyst = 0,
 		     .cdev[0] = {
 			.type = "thermal-cpufreq-1", .upper = 2, .lower = 1},
 		     .cdev[1] = {
@@ -788,7 +788,7 @@ static struct mtk_thermal_platform_data virtual_sensor_thermal_data = {
 		     .cdev[2] = {
 			.type = "charger", .upper = 2, .lower = 1},
 	},
-	.trips[2] = {.temp = 43000, .type = THERMAL_TRIP_ACTIVE, .hyst = 0,
+	.trips[2] = {.temp = 50750, .type = THERMAL_TRIP_ACTIVE, .hyst = 0,
 		     .cdev[0] = {
 			.type = "thermal-cpufreq-1", .upper = 3, .lower = 2},
 		     .cdev[1] = {
@@ -796,7 +796,7 @@ static struct mtk_thermal_platform_data virtual_sensor_thermal_data = {
 		     .cdev[2] = {
 			.type = "charger", .upper = 3, .lower = 2},
 	},
-	.trips[3] = {.temp = 44000, .type = THERMAL_TRIP_ACTIVE, .hyst = 0,
+	.trips[3] = {.temp = 51000, .type = THERMAL_TRIP_ACTIVE, .hyst = 0,
 		     .cdev[0] = {
 			.type = "thermal-cpufreq-1", .upper = 4, .lower = 3},
 		     .cdev[1] = {
@@ -804,7 +804,7 @@ static struct mtk_thermal_platform_data virtual_sensor_thermal_data = {
 		     .cdev[2] = {
 			.type = "charger", .upper = 4, .lower = 3},
 	},
-	.trips[4] = {.temp = 45000, .type = THERMAL_TRIP_CRITICAL, .hyst = 0},
+	.trips[4] = {.temp = 60000, .type = THERMAL_TRIP_CRITICAL, .hyst = 0},
 };
 
 struct platform_device thermal_pdev = {

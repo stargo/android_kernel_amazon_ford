@@ -2503,11 +2503,10 @@ void mt_battery_GetBatteryData(void)
 	if (g_battery_soc_ready == KAL_FALSE)
 		g_battery_soc_ready = KAL_TRUE;
 
-	battery_xlog_printk(BAT_LOG_CRTI,
-			    "AvgVbat=(%d),bat_vol=(%d),AvgI=(%d),I=(%d),VChr=(%d),AvgT=(%d),T=(%d),pre_SOC=(%d),SOC=(%d),ZCV=(%d)\n",
-			    BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
-			    BMT_status.charger_vol, BMT_status.temperature, temperature,
-			    previous_SOC, BMT_status.SOC, BMT_status.ZCV);
+	pr_notice("AvgVbat=(%d),bat_vol=(%d),AvgI=(%d),I=(%d),VChr=(%d),AvgT=(%d),T=(%d),pre_SOC=(%d),SOC=(%d),ZCV=(%d)\n",
+			BMT_status.bat_vol, bat_vol, BMT_status.ICharging, ICharging,
+			BMT_status.charger_vol, BMT_status.temperature, temperature,
+			previous_SOC, BMT_status.SOC, BMT_status.ZCV);
 
 
 }

@@ -20,6 +20,10 @@ ifeq ($(CONFIG_MTK_BMA253),y)
 obj-y   +=  accelerometer/BMA253/
 endif
 
+ifeq ($(CONFIG_MTK_MC3410),y)
+obj-y   +=  accelerometer/MC3410-NEW/
+endif
+
 ifeq ($(CONFIG_CUSTOM_KERNEL_GYROSCOPE),y)
 obj-y   +=  gyroscope/
 endif

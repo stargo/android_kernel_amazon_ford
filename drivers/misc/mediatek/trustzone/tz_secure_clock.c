@@ -151,7 +151,7 @@ struct rtc_time tm;
 int err = -ENODEV;
 
 ret = err;
-pr_err("enter  TEE_Icnt_time \n");
+//pr_err("enter  TEE_Icnt_time \n");
 
 shm_p = kmalloc(sizeof(struct TM_GB), GFP_KERNEL);
 
@@ -338,7 +338,7 @@ for (;;) {
 		}
 }
 
-		pr_err("update_securetime_thread_gb updata inc count\n");
+		//pr_err("update_securetime_thread_gb updata inc count\n");
 
 }
 
